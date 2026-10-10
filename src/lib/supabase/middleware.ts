@@ -34,18 +34,27 @@ export async function updateSession(request: NextRequest) {
   const url = request.nextUrl.clone();
   const path = url.pathname;
 
+  // Handle MCP JSON-RPC requests or probes sent to the root domain
+  if (request.method === 'POST' && path === '/') {
+    return NextResponse.rewrite(new URL('/api/mcp', request.url));
+  }
+
   // Exclude static assets, api routes, mcp endpoints, auth pages
-  const isAuthPage = path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/auth');
-  const isPublicApi = path.startsWith('/api/mcp') || path.startsWith('/api/cron') || path.startsWith('/.well-known');
+  const isMcpAuthorize = path === '/mcp/authorize';
+  const isAuthPage = path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/auth') || isMcpAuthorize;
+  const isPublicApi = path.startsWith('/api/mcp') || path === '/mcp' || path.startsWith('/api/cron') || path.startsWith('/.well-known');
   const isStatic = path.startsWith('/_next') || path.includes('.');
 
-  if (!user && !isAuthPage && !isPublicApi && !isStatic) {
+  if (!user && !isPublicApi && !isStatic) {
+    if (isAuthPage && !isMcpAuthorize) {
+      return supabaseResponse;
+    }
     url.pathname = '/login';
-    url.searchParams.set('next', path);
+    url.searchParams.set('next', `${path}${request.nextUrl.search}`);
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthPage && !path.startsWith('/auth/callback')) {
+  if (user && isAuthPage && !path.startsWith('/auth/callback') && !isMcpAuthorize) {
     url.pathname = '/';
     return NextResponse.redirect(url);
   }

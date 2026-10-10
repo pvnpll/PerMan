@@ -8,7 +8,7 @@ function getCorsHeaders(baseUrl: string) {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': '*',
     'Access-Control-Expose-Headers': 'WWW-Authenticate',
-    'WWW-Authenticate': `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`,
+    'WWW-Authenticate': `Bearer realm="PerMang", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource", scope="tasks:read tasks:write reminders:write"`,
   };
 }
 
@@ -27,7 +27,16 @@ export async function GET(req: NextRequest) {
   if (!authInfo) {
     return new Response(
       JSON.stringify({
-        error: 'Unauthorized',
+        jsonrpc: '2.0',
+        error: {
+          code: -32001,
+          message: 'Authentication required. Valid Bearer token required for PerMang MCP.',
+          data: {
+            _meta: {
+              'mcp/www_authenticate': `Bearer realm="PerMang", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource", scope="tasks:read tasks:write reminders:write"`,
+            },
+          },
+        },
         message: 'Valid Bearer token required for PerMang MCP endpoint.',
         oauth_metadata: `${baseUrl}/.well-known/oauth-protected-resource`,
       }),
@@ -68,8 +77,18 @@ export async function POST(req: NextRequest) {
   if (!authInfo) {
     return new Response(
       JSON.stringify({
-        error: 'Unauthorized',
+        jsonrpc: '2.0',
+        error: {
+          code: -32001,
+          message: 'Authentication required. Valid Bearer token required for PerMang MCP.',
+          data: {
+            _meta: {
+              'mcp/www_authenticate': `Bearer realm="PerMang", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource", scope="tasks:read tasks:write reminders:write"`,
+            },
+          },
+        },
         message: 'Valid Bearer token required for PerMang MCP endpoint.',
+        oauth_metadata: `${baseUrl}/.well-known/oauth-protected-resource`,
       }),
       {
         status: 401,

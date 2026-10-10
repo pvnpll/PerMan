@@ -11,6 +11,7 @@ function AuthorizeContent() {
   const clientId = searchParams.get('client_id') || 'ChatGPT';
   const redirectUri = searchParams.get('redirect_uri');
   const state = searchParams.get('state');
+  const codeChallenge = searchParams.get('code_challenge');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +33,7 @@ function AuthorizeContent() {
           client_id: clientId,
           redirect_uri: redirectUri,
           state,
+          code_challenge: codeChallenge,
         }),
       });
 

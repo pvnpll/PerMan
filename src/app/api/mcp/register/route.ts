@@ -19,9 +19,26 @@ export async function POST(req: NextRequest) {
       grant_types: ['authorization_code'],
       response_types: ['code'],
       token_endpoint_auth_method: 'none',
-    }, { status: 201 });
+    }, {
+      status: 201,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+      },
+    });
   } catch (err: any) {
-    return NextResponse.json({ error: 'invalid_client_metadata', details: err.message }, { status: 400 });
+    return NextResponse.json(
+      { error: 'invalid_client_metadata', details: err.message },
+      {
+        status: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+        },
+      }
+    );
   }
 }
 

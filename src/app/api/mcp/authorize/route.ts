@@ -4,6 +4,12 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { PM_TABLES } from '@/lib/db-tables';
 import crypto from 'crypto';
 
+export async function GET(req: NextRequest) {
+  const url = req.nextUrl.clone();
+  url.pathname = '/mcp/authorize';
+  return NextResponse.redirect(url);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
@@ -13,7 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized. Please log in first.' }, { status: 401 });
     }
 
-    const { client_id, redirect_uri, state } = await req.json();
+    const { client_id, redirect_uri, state, code_challenge } = await req.json();
 
     if (!redirect_uri) {
       return NextResponse.json({ error: 'redirect_uri is required' }, { status: 400 });
@@ -28,6 +34,7 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       client_id: client_id || 'chatgpt',
       redirect_uri,
+      code_challenge: code_challenge || null,
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
     });
 
@@ -40,4 +47,15 @@ export async function POST(req: NextRequest) {
     console.error('Authorize error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
+}
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+    },
+  });
 }

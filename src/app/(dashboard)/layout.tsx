@@ -1,0 +1,93 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Sidebar } from '@/lib/../components/navigation/Sidebar';
+import { BottomNav } from '@/lib/../components/navigation/BottomNav';
+import { QuickAddModal } from '@/lib/../components/tasks/QuickAddModal';
+import { createClient } from '@/lib/supabase/client';
+import { Sparkles, Plus, Clock } from 'lucide-react';
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState<string>('');
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) {
+        setUserEmail(data.user.email);
+      }
+    });
+
+    const updateTime = () => {
+      setCurrentTime(
+        new Intl.DateTimeFormat('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+        }).format(new Date())
+      );
+    };
+
+    updateTime();
+    const timer = setInterval(updateTime, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+      {/* Desktop Sidebar */}
+      <Sidebar
+        onOpenQuickAdd={() => setQuickAddOpen(true)}
+        userEmail={userEmail}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
+        {/* Top Header */}
+        <header className="sticky top-0 z-30 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 md:px-8 flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-xs text-slate-400">
+            <Clock className="w-3.5 h-3.5 text-indigo-400" />
+            <span>{currentTime}</span>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => setQuickAddOpen(true)}
+              className="py-1.5 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center space-x-1.5 shadow-md shadow-indigo-600/30 transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Quick Add</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 p-4 md:p-8 max-w-6xl w-full mx-auto">
+          {children}
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <BottomNav onOpenQuickAdd={() => setQuickAddOpen(true)} />
+
+      {/* Global Quick Add Modal */}
+      <QuickAddModal
+        isOpen={quickAddOpen}
+        onClose={() => setQuickAddOpen(false)}
+        onTaskCreated={() => {
+          window.dispatchEvent(new CustomEvent('permang:task_created'));
+        }}
+      />
+    </div>
+  );
+}

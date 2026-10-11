@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthUserId } from '@/lib/auth-helper';
 import { getProjects, createProject } from '@/lib/services/projects.service';
 import { CreateProjectSchema } from '@/lib/validation';
 
+export async function GET(req: NextRequest) {
+  const userId = await getAuthUserId(req);
 
-export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const projects = await getProjects(user.id);
+    const projects = await getProjects(userId);
     return NextResponse.json({ projects });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -21,10 +19,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(req);
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -32,7 +29,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = CreateProjectSchema.parse(body);
 
-    const project = await createProject(user.id, validated);
+    const project = await createProject(userId, validated);
     return NextResponse.json({ project }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });

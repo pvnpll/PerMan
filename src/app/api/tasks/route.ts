@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthUserId } from '@/lib/auth-helper';
 import { getTasks, createTask } from '@/lib/services/tasks.service';
 import { CreateTaskSchema, SearchTasksSchema } from '@/lib/validation';
 
-
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(req);
 
-  if (authError || !user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -23,7 +21,7 @@ export async function GET(req: NextRequest) {
       archived: searchParams.archived === 'true',
     });
 
-    const result = await getTasks(user.id, parsedFilter);
+    const result = await getTasks(userId, parsedFilter);
     return NextResponse.json(result);
   } catch (err: any) {
     console.error('GET /api/tasks error:', err);
@@ -32,10 +30,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(req);
 
-  if (authError || !user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -43,7 +40,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = CreateTaskSchema.parse(body);
 
-    const task = await createTask(user.id, validated);
+    const task = await createTask(userId, validated);
     return NextResponse.json({ task }, { status: 201 });
   } catch (err: any) {
     console.error('POST /api/tasks error:', err);

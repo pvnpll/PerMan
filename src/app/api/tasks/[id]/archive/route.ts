@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthUserId } from '@/lib/auth-helper';
 import { archiveTask } from '@/lib/services/tasks.service';
-
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = await getAuthUserId(req);
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const task = await archiveTask(user.id, id);
+    const task = await archiveTask(userId, id);
     return NextResponse.json({ task });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });

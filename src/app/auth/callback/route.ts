@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
-
+import { ensureUserProfile } from '@/lib/services/profile.service';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -9,8 +9,14 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data?.user) {
+      await ensureUserProfile(
+        data.user.id,
+        data.user.email,
+        data.user.user_metadata?.full_name,
+        data.user.user_metadata?.timezone
+      );
       return NextResponse.redirect(new URL(next, requestUrl.origin));
     }
   }

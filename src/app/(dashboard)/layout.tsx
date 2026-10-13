@@ -22,6 +22,7 @@ export default function DashboardLayout({
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user?.email) {
         setUserEmail(data.user.email);
+        fetch('/api/account').catch(() => {});
       }
     });
 

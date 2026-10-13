@@ -2,8 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PM_TABLES } from '@/lib/db-tables';
+import { ensureUserProfile } from '@/lib/services/profile.service';
 import crypto from 'crypto';
 
+export async function GET() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Ensure user profile & default categories exist in pm_ tables
+  await ensureUserProfile(
+    user.id,
+    user.email,
+    user.user_metadata?.full_name || user.email?.split('@')[0],
+    user.user_metadata?.timezone
+  );
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from(PM_TABLES.PROFILES)
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  return NextResponse.json({ user, profile });
+}
 
 export async function POST(req: NextRequest) {
   // Generate a Personal Access Token for MCP

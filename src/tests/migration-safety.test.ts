@@ -84,4 +84,9 @@ describe('Database Migration Safety & Isolation', () => {
       ).toBe(true);
     }
   });
+
+  it('strictly prohibits triggers on auth.users for multi-project isolation', () => {
+    const triggerOnAuthUsers = /CREATE\s+TRIGGER\s+[^\n]+ON\s+auth\.users/gi;
+    expect(triggerOnAuthUsers.test(sql)).toBe(false);
+  });
 });

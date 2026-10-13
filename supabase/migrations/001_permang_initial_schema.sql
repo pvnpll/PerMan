@@ -476,32 +476,18 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ------------------------------------------------------------------------------
--- 15. Trigger to automatically handle profile creation & defaults for new users
+-- 15. User initialization (Handled in application layer for multi-project isolation)
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION pm_handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO pm_profiles (id, email, full_name, timezone)
-    VALUES (
-        NEW.id,
-        NEW.email,
-        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
-        COALESCE(NEW.raw_user_meta_data->>'timezone', 'Asia/Kolkata')
-    )
-    ON CONFLICT (id) DO NOTHING;
-
-    PERFORM pm_seed_user_defaults(NEW.id);
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Trigger on auth.users for new signups
-DROP TRIGGER IF EXISTS pm_on_auth_user_created ON auth.users;
-CREATE TRIGGER pm_on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW
-    EXECUTE FUNCTION pm_handle_new_user();
+-- NOTE: In a shared Supabase database (e.g. shared with Calflow / Instareels),
+-- global triggers on `auth.users` must NOT be used because they fire on signups
+-- for all sibling projects.
+--
+-- User profile creation (pm_profiles) and default category/project seeding
+-- (pm_seed_user_defaults) are handled safely in the PerMang application layer
+-- (see src/lib/services/profile.service.ts).
+--
+-- DROP TRIGGER IF EXISTS pm_on_auth_user_created ON auth.users;
+-- DROP FUNCTION IF EXISTS pm_handle_new_user();
 
 -- ==============================================================================
 -- End of PerMang Schema

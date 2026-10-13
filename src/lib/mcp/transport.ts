@@ -64,11 +64,22 @@ export async function authenticateToken(req: Request): Promise<McpAuthInfo | nul
     .eq('access_token', token);
 
   // Fetch user timezone from pm_profiles
-  const { data: profile } = await admin
+  let { data: profile } = await admin
     .from(PM_TABLES.PROFILES)
     .select('timezone')
     .eq('id', tokenRow.user_id)
     .maybeSingle();
+
+  if (!profile) {
+    const { ensureUserProfile } = await import('@/lib/services/profile.service');
+    await ensureUserProfile(tokenRow.user_id);
+    const { data: p } = await admin
+      .from(PM_TABLES.PROFILES)
+      .select('timezone')
+      .eq('id', tokenRow.user_id)
+      .maybeSingle();
+    profile = p;
+  }
 
   const timezone = isValidTimezone(profile?.timezone) ? profile!.timezone : DEFAULT_TIMEZONE;
 

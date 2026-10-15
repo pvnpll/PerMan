@@ -19,7 +19,7 @@ export function BottomNav({ onOpenQuickAdd }: BottomNavProps) {
   const pathname = usePathname();
 
   const links = [
-    { label: 'Today', href: '/', icon: LayoutDashboard },
+    { label: 'Memory', href: '/', icon: LayoutDashboard },
     { label: 'Inbox', href: '/inbox', icon: Inbox },
     { label: 'Tasks', href: '/tasks', icon: CheckSquare },
     { label: 'Projects', href: '/projects', icon: FolderKanban },
@@ -27,7 +27,7 @@ export function BottomNav({ onOpenQuickAdd }: BottomNavProps) {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-40 px-2 py-1 flex items-center justify-around">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#101216]/95 backdrop-blur-md border-t border-white/[.07] z-40 px-2 py-1 flex items-center justify-around">
       {links.slice(0, 2).map((link) => {
         const Icon = link.icon;
         const isActive = pathname === link.href;

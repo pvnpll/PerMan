@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'PerMang — Personal Management & Task Reminder App',
+  title: 'PerMan — Personal Management & Task Reminder App',
   description: 'Your personal external memory for tasks, reminders, purchases, and projects.',
 };
 

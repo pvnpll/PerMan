@@ -56,7 +56,7 @@ export default function SignUpPage() {
           <div className="inline-flex w-12 h-12 rounded-2xl bg-indigo-600 items-center justify-center font-bold text-xl text-white shadow-lg shadow-indigo-600/30 mb-4">
             PM
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Create PerMang Account</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Create PerMan Account</h1>
           <p className="text-sm text-slate-400 mt-1">Initialize your personal task & memory space</p>
         </div>
 

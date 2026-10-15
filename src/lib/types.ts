@@ -1,5 +1,5 @@
 /**
- * PerMang Domain & Database Types
+ * PerMan Domain & Database Types
  */
 
 export type TaskStatus = 'INBOX' | 'NEXT' | 'SCHEDULED' | 'WAITING' | 'DONE' | 'CANCELLED';

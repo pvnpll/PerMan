@@ -1,5 +1,5 @@
 -- ==============================================================================
--- PerMang: Seed existing auth.users (if any) with profiles & default categories
+-- PerMan: Seed existing auth.users (if any) with profiles & default categories
 -- ==============================================================================
 
 DO $$

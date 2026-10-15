@@ -44,7 +44,7 @@ export async function GET() {
   return new Response(JSON.stringify(exportData, null, 2), {
     headers: {
       'Content-Type': 'application/json',
-      'Content-Disposition': `attachment; filename="permang-export-${new Date().toISOString().split('T')[0]}.json"`,
+      'Content-Disposition': `attachment; filename="perman-export-${new Date().toISOString().split('T')[0]}.json"`,
     },
   });
 }

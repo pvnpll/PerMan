@@ -195,7 +195,7 @@ export function TaskCard({ task, onRefresh, onEdit }: TaskCardProps) {
             {task.category && (
               <span className="text-[11px] font-medium text-emerald-300 bg-emerald-950/50 border border-emerald-800/50 px-2 py-0.5 rounded-md flex items-center space-x-1">
                 <Tag className="w-3 h-3 text-emerald-400" />
-                <span>{task.category.name}</span>
+                <span>{task.category.name}{task.subcategory ? ` / ${task.subcategory.name}` : ''}</span>
               </span>
             )}
 

@@ -24,3 +24,20 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* A quiet, consistent dark workspace. */
+:root {
+  color-scheme: dark;
+  --background: #0c0e12;
+  --foreground: #e4e4e7;
+}
+body { font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; }
+.memory-panel { border: 1px solid rgb(255 255 255 / .07); border-radius: 12px; background: #111318; }
+.memory-home button, .memory-home a { transition: background-color .15s, color .15s, border-color .15s; }
+.memory-home button:not(:disabled) { cursor: pointer; }
+.memory-home :focus-visible { outline: 2px solid #a5b4fc; outline-offset: 4px; }
+.memory-node:hover > circle:first-of-type, .memory-node:focus-visible > circle:first-of-type { fill-opacity: .15; stroke-opacity: .7; }
+.map-control { display: flex; align-items: center; justify-content: center; width: 27px; height: 27px; border-radius: 5px; color: #a1a1aa; }
+.map-control:hover { background: rgb(255 255 255 / .06); color: white; }
+.map-control:disabled { opacity: .3; }
+.memory-map-surface { scrollbar-width: thin; scrollbar-color: #30343d #111318; }

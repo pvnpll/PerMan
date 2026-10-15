@@ -2,13 +2,13 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { createPerMangMcpServer } from '../src/lib/mcp/server';
+import { createPerManMcpServer } from '../src/lib/mcp/server';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 async function runMcpSmokeTest() {
   console.log('========================================================');
-  console.log('🤖 PerMang Remote MCP Server Smoke Test');
+  console.log('🤖 PerMan Remote MCP Server Smoke Test');
   console.log('========================================================\n');
 
   const dummyAuth = {
@@ -19,7 +19,7 @@ async function runMcpSmokeTest() {
     timezone: 'Asia/Kolkata',
   };
 
-  const server = createPerMangMcpServer(dummyAuth);
+  const server = createPerManMcpServer(dummyAuth);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
   const client = new Client(
@@ -27,7 +27,7 @@ async function runMcpSmokeTest() {
     { capabilities: {} }
   );
 
-  console.log('1. Connecting in-memory MCP client to PerMang server...');
+  console.log('1. Connecting in-memory MCP client to PerMan server...');
   await Promise.all([
     server.connect(serverTransport),
     client.connect(clientTransport),

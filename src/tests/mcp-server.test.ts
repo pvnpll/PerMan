@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createPerMangMcpServer } from '../lib/mcp/server';
+import { createPerManMcpServer } from '../lib/mcp/server';
 
 describe('Remote MCP Server Specification', () => {
   const dummyAuth = {
@@ -10,13 +10,13 @@ describe('Remote MCP Server Specification', () => {
     timezone: 'Asia/Kolkata',
   };
 
-  it('initializes MCP server with name "permang-mcp"', () => {
-    const server = createPerMangMcpServer(dummyAuth);
+  it('initializes MCP server with name "perman-mcp"', () => {
+    const server = createPerManMcpServer(dummyAuth);
     expect(server).toBeDefined();
   });
 
   it('exposes all 12 required ChatGPT MCP tools', () => {
-    const server = createPerMangMcpServer(dummyAuth);
+    const server = createPerManMcpServer(dummyAuth);
     const requiredTools = [
       'create_task',
       'search_tasks',

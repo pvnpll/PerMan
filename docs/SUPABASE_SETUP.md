@@ -2,10 +2,10 @@
 
 ## Supabase Project: `random` (`shfkfqdfahnxodewxupi`)
 
-PerMang is deployed into the existing Supabase project named **`random`**.
+PerMan is deployed into the existing Supabase project named **`random`**.
 
 ### Strict Isolation Rules
-- **Prefix Isolation**: Every single PerMang table starts with `pm_`.
+- **Prefix Isolation**: Every single PerMan table starts with `pm_`.
 - **Protected Sibling Tables**: Tables belonging to sibling applications (`cf_*` Calflow, `ir_*` InstaReels, and legacy tables) are untouched.
 - **Row Level Security**: Every table has RLS enabled with `auth.uid()` policies.
 
@@ -14,14 +14,14 @@ PerMang is deployed into the existing Supabase project named **`random`**.
 ## 1. Migration Execution
 
 The complete database schema is version-controlled in:
-[`supabase/migrations/001_permang_initial_schema.sql`](file:///Users/pavan/Build/permang/supabase/migrations/001_permang_initial_schema.sql)
+[`supabase/migrations/001_permang_initial_schema.sql`](supabase/migrations/001_permang_initial_schema.sql)
 
 ### How to apply:
 1. Log in to the [Supabase Dashboard](https://supabase.com/dashboard).
 2. Select the project **`random`** (`shfkfqdfahnxodewxupi`).
 3. Click **SQL Editor** from the left navigation.
 4. Click **New Query**.
-5. Paste the entire content of [`supabase/migrations/001_permang_initial_schema.sql`](file:///Users/pavan/Build/permang/supabase/migrations/001_permang_initial_schema.sql).
+5. Paste the entire content of [`supabase/migrations/001_permang_initial_schema.sql`](supabase/migrations/001_permang_initial_schema.sql).
 6. Click **Run**.
 
 ---

@@ -6,6 +6,7 @@ import * as projectsService from '@/lib/services/projects.service';
 import * as remindersService from '@/lib/services/reminders.service';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PM_TABLES } from '@/lib/db-tables';
+import { organizeTask } from '@/lib/services/task-organization.service';
 import { parseNaturalLanguageTask } from '@/lib/nlp-parser';
 
 export interface McpAuthInfo {
@@ -18,9 +19,9 @@ export interface McpAuthInfo {
   [key: string]: any;
 }
 
-export function createPerMangMcpServer(authInfo: McpAuthInfo) {
+export function createPerManMcpServer(authInfo: McpAuthInfo) {
   const server = new McpServer({
-    name: 'permang-mcp',
+    name: 'perman-mcp',
     version: '1.0.0',
   });
 
@@ -35,14 +36,15 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
   // 1. tool: create_task
   server.tool(
     'create_task',
-    'Create a new personal management task in PerMang. Supports structured parameters or raw natural language capture.',
+    'Create a new personal management task in PerMan. Act as personal memory: infer a suitable category and subcategory from the conversation and pass their names. For project work pass project_name; missing categories and projects are created automatically. Preserve full ticket details, acceptance criteria, and next steps in description. Supports raw natural language capture.',
     {
       title: z.string().describe('The task title or quick-add text (e.g. "Buy headphones from Amazon next month")'),
       description: z.string().optional().describe('Optional detailed notes or description'),
-      category_name: z.string().optional().describe('Optional category name (e.g. "Finances", "Shopping", "Development")'),
-      project_name: z.string().optional().describe('Optional project name (e.g. "Calflow", "Rimev", "Klay")'),
-      status: z.enum(['INBOX', 'NEXT', 'SCHEDULED', 'WAITING', 'DONE', 'CANCELLED']).optional().default('INBOX'),
-      priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional().default('MEDIUM'),
+      category_name: z.string().trim().min(1).max(100).optional().describe('AI-chosen life area. Defaults to Projects for project work, otherwise Personal.'),
+      subcategory_name: z.string().trim().min(1).max(100).optional().describe('AI-chosen subgroup, e.g. Health, Finances, Shopping. Created automatically. For project tasks the project name is the subgroup.'),
+      project_name: z.string().trim().min(1).max(100).optional().describe('Optional project name (e.g. "Calflow", "Rimev", "Klay")'),
+      status: z.enum(['INBOX', 'NEXT', 'SCHEDULED', 'WAITING', 'DONE', 'CANCELLED']).optional(),
+      priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
       due_date: z.string().optional().describe('ISO 8601 due date string'),
       reminder_time: z.string().optional().describe('ISO 8601 reminder time string'),
       merchant: z.string().optional().describe('Merchant or vendor (e.g. Amazon, Flipkart)'),
@@ -74,25 +76,17 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
       // If user input contains natural language clues, enrich with parser
       const parsed = parseNaturalLanguageTask(args.title, userTz);
 
-      let categoryId: string | null = null;
-      const targetCatName = args.category_name || parsed.categoryName;
-      if (targetCatName) {
-        const cat = await categoriesService.findCategoryByName(userId, targetCatName);
-        if (cat) categoryId = cat.id;
-      }
-
-      let projectId: string | null = null;
-      const targetProjName = args.project_name || parsed.projectName;
-      if (targetProjName) {
-        const proj = await projectsService.findProjectByName(userId, targetProjName);
-        if (proj) projectId = proj.id;
-      }
+      const projectName = args.project_name || parsed.projectName;
+      const organization = await organizeTask(userId, {
+        categoryName: args.category_name || (projectName ? 'Projects' : 'Personal'),
+        subcategoryName: args.subcategory_name || (!projectName ? parsed.categoryName : undefined),
+        projectName,
+      });
 
       const task = await tasksService.createTask(userId, {
         title: parsed.title || args.title,
         description: args.description,
-        category_id: categoryId,
-        project_id: projectId,
+        ...organization,
         status: args.status || parsed.status || 'INBOX',
         priority: (args.priority || parsed.priority || 'MEDIUM') as any,
         due_date: args.due_date || parsed.dueDate || null,
@@ -102,7 +96,7 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
         source: 'MCP',
         external_url: args.url || parsed.url || null,
         merchant: args.merchant || parsed.merchant || null,
-        estimated_amount: args.estimated_amount || parsed.estimatedAmount || null,
+        estimated_amount: args.estimated_amount ?? parsed.estimatedAmount ?? null,
       });
 
       // Save idempotency key if provided
@@ -117,7 +111,7 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
 
       return jsonResponse({
         success: true,
-        message: `Task "${task.title}" created successfully in PerMang`,
+        message: `Task "${task.title}" created successfully in PerMan`,
         task,
       });
     }
@@ -126,22 +120,27 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
   // 2. tool: search_tasks
   server.tool(
     'search_tasks',
-    'Search PerMang tasks by keyword, status, priority, or due date range',
+    'Search PerMan tasks by keyword, status, priority, or due date range',
     {
       query: z.string().optional().describe('Keyword search in title, description, or merchant'),
+      category_id: z.string().uuid().optional().describe('Category or subcategory UUID from list_categories'),
+      project_id: z.string().uuid().optional().describe('Project UUID from get_projects'),
+      offset: z.number().int().min(0).optional().default(0),
       status: z.enum(['INBOX', 'NEXT', 'SCHEDULED', 'WAITING', 'DONE', 'CANCELLED']).optional(),
       priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
       due_date: z.enum(['today', 'overdue', 'upcoming']).optional(),
-      limit: z.number().optional().default(20),
+      limit: z.number().int().min(1).max(100).optional().default(20),
     },
     async (args) => {
       const res = await tasksService.getTasks(userId, {
         query: args.query,
+        category_id: args.category_id,
+        project_id: args.project_id,
         status: args.status,
         priority: args.priority,
         due_date: args.due_date,
         limit: args.limit || 20,
-        offset: 0,
+        offset: args.offset,
         archived: false,
         sort_by: 'created_at',
         sort_direction: 'desc',
@@ -158,13 +157,17 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
   // 3. tool: get_tasks
   server.tool(
     'get_tasks',
-    'Get recent active tasks from PerMang inbox, scheduled, or next lists',
+    'Get tasks, including next actions for a project or category; use get_projects or list_categories for IDs',
     {
+      category_id: z.string().uuid().optional(),
+      project_id: z.string().uuid().optional(),
       status: z.enum(['INBOX', 'NEXT', 'SCHEDULED', 'WAITING', 'DONE', 'CANCELLED']).optional(),
-      limit: z.number().optional().default(20),
+      limit: z.number().int().min(1).max(100).optional().default(20),
     },
     async (args) => {
       const res = await tasksService.getTasks(userId, {
+        category_id: args.category_id,
+        project_id: args.project_id,
         status: args.status,
         limit: args.limit || 20,
         offset: 0,
@@ -180,7 +183,7 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
   // 4. tool: get_task
   server.tool(
     'get_task',
-    'Get details of a specific PerMang task by UUID',
+    'Get details of a specific PerMan task by UUID',
     {
       task_id: z.string().uuid().describe('The UUID of the task'),
     },
@@ -196,7 +199,7 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
   // 5. tool: update_task
   server.tool(
     'update_task',
-    'Update an existing task in PerMang',
+    'Update an existing task in PerMan',
     {
       task_id: z.string().uuid().describe('The task UUID'),
       title: z.string().optional(),
@@ -227,7 +230,7 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
   // 6. tool: complete_task
   server.tool(
     'complete_task',
-    'Mark a task as completed in PerMang',
+    'Mark a task as completed in PerMan',
     {
       task_id: z.string().uuid().describe('The task UUID to mark complete'),
     },
@@ -244,7 +247,7 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
   // 7. tool: delete_task
   server.tool(
     'delete_task',
-    'Permanently delete a task from PerMang',
+    'Permanently delete a task from PerMan',
     {
       task_id: z.string().uuid().describe('The task UUID to delete'),
     },
@@ -260,7 +263,7 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
   // 8. tool: list_categories
   server.tool(
     'list_categories',
-    'List all user categories and subcategories in PerMang',
+    'List all user categories and subcategories in PerMan',
     {},
     async () => {
       const categories = await categoriesService.getCategories(userId);
@@ -271,7 +274,7 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
   // 9. tool: create_category
   server.tool(
     'create_category',
-    'Create a new category or subcategory in PerMang',
+    'Create a new category or subcategory in PerMan',
     {
       name: z.string().describe('Category name'),
       parent_category_name: z.string().optional().describe('Optional parent category name if creating a subcategory'),
@@ -279,8 +282,13 @@ export function createPerMangMcpServer(authInfo: McpAuthInfo) {
     async (args) => {
       let parentId: string | null = null;
       if (args.parent_category_name) {
-        const parent = await categoriesService.findCategoryByName(userId, args.parent_category_name);
-        if (parent) parentId = parent.id;
+        const parent = (await categoriesService.getCategories(userId)).find(category =>
+          !category.is_archived && category.name.trim().toLowerCase() === args.parent_category_name!.trim().toLowerCase()
+        );
+        const resolved = parent || await categoriesService.createCategory(userId, {
+          name: args.parent_category_name, sort_order: 0,
+        });
+        parentId = resolved.id;
       }
 
       const created = await categoriesService.createCategory(userId, {

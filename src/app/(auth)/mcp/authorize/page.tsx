@@ -69,7 +69,7 @@ function AuthorizeContent() {
             PM
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">PerMang</h1>
+            <h1 className="text-xl font-bold tracking-tight text-white">PerMan</h1>
             <p className="text-xs text-slate-400">Personal Management & External Memory</p>
           </div>
         </div>
@@ -80,7 +80,7 @@ function AuthorizeContent() {
             <span>Connect Application</span>
           </div>
           <p className="text-sm text-slate-300">
-            <strong className="text-white">{clientId}</strong> is requesting permission to access your PerMang workspace.
+            <strong className="text-white">{clientId}</strong> is requesting permission to access your PerMan workspace.
           </p>
         </div>
 

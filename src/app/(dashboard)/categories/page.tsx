@@ -85,7 +85,7 @@ export default function CategoriesPage() {
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Categories & Life Areas</h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Organize personal management across 10 default groups or create custom areas.
+            Your memory, organized into life areas, projects, and subcategories. ChatGPT can create groups as you add tasks.
           </p>
         </div>
 

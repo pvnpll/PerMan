@@ -54,9 +54,9 @@ async function checkDatabase() {
     const foundPmTables = existingDefinitions.filter((t) => t.startsWith('pm_'));
     const missingTables = REQUIRED_TABLES.filter((t) => !existingDefinitions.includes(t));
 
-    console.log(`\n--- PerMang (pm_) Table Status ---`);
+    console.log(`\n--- PerMan (pm_) Table Status ---`);
     if (foundPmTables.length > 0) {
-      console.log(`✅ Existing PerMang tables (${foundPmTables.length}):`);
+      console.log(`✅ Existing PerMan tables (${foundPmTables.length}):`);
       foundPmTables.forEach((t) => console.log(`   - ${t}`));
     } else {
       console.log(`⚠️  No 'pm_' tables found in database schema yet.`);
@@ -69,7 +69,7 @@ async function checkDatabase() {
       console.log(`   Open the Supabase SQL Editor for project 'random' (${SUPABASE_URL?.replace('.supabase.co', '')}):`);
       console.log(`   Copy and run: supabase/migrations/001_permang_initial_schema.sql`);
     } else {
-      console.log(`\n🎉 All required PerMang tables are present and verified!`);
+      console.log(`\n🎉 All required PerMan tables are present and verified!`);
     }
   } catch (err: any) {
     console.error('❌ Connection failed:', err.message);

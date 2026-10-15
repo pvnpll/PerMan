@@ -8,7 +8,7 @@ function getCorsHeaders(baseUrl: string) {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': '*',
     'Access-Control-Expose-Headers': 'WWW-Authenticate',
-    'WWW-Authenticate': `Bearer realm="PerMang", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource", scope="tasks:read tasks:write reminders:write"`,
+    'WWW-Authenticate': `Bearer realm="PerMan", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource", scope="tasks:read tasks:write reminders:write"`,
   };
 }
 
@@ -30,14 +30,14 @@ export async function GET(req: NextRequest) {
         jsonrpc: '2.0',
         error: {
           code: -32001,
-          message: 'Authentication required. Valid Bearer token required for PerMang MCP.',
+          message: 'Authentication required. Valid Bearer token required for PerMan MCP.',
           data: {
             _meta: {
-              'mcp/www_authenticate': `Bearer realm="PerMang", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource", scope="tasks:read tasks:write reminders:write"`,
+              'mcp/www_authenticate': `Bearer realm="PerMan", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource", scope="tasks:read tasks:write reminders:write"`,
             },
           },
         },
-        message: 'Valid Bearer token required for PerMang MCP endpoint.',
+        message: 'Valid Bearer token required for PerMan MCP endpoint.',
         oauth_metadata: `${baseUrl}/.well-known/oauth-protected-resource`,
       }),
       {
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   return new Response(
     JSON.stringify({
       status: 'active',
-      name: 'permang-mcp',
+      name: 'perman-mcp',
       version: '1.0.0',
       user_id: authInfo.userId,
       client: authInfo.clientName,
@@ -80,14 +80,14 @@ export async function POST(req: NextRequest) {
         jsonrpc: '2.0',
         error: {
           code: -32001,
-          message: 'Authentication required. Valid Bearer token required for PerMang MCP.',
+          message: 'Authentication required. Valid Bearer token required for PerMan MCP.',
           data: {
             _meta: {
-              'mcp/www_authenticate': `Bearer realm="PerMang", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource", scope="tasks:read tasks:write reminders:write"`,
+              'mcp/www_authenticate': `Bearer realm="PerMan", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource", scope="tasks:read tasks:write reminders:write"`,
             },
           },
         },
-        message: 'Valid Bearer token required for PerMang MCP endpoint.',
+        message: 'Valid Bearer token required for PerMan MCP endpoint.',
         oauth_metadata: `${baseUrl}/.well-known/oauth-protected-resource`,
       }),
       {

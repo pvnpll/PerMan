@@ -6,21 +6,21 @@ export async function GET() {
   const openApiSpec = {
     openapi: '3.1.0',
     info: {
-      title: 'PerMang API',
+      title: 'PerMan API',
       description: 'Personal Management & Task Reminder App API for ChatGPT Actions and custom integrations.',
       version: '1.0.0',
     },
     servers: [
       {
         url: baseUrl,
-        description: 'PerMang Production Server',
+        description: 'PerMan Production Server',
       },
     ],
     components: {
       securitySchemes: {
         OAuth2: {
           type: 'oauth2',
-          description: 'PerMang OAuth 2.0 Authentication',
+          description: 'PerMan OAuth 2.0 Authentication',
           flows: {
             authorizationCode: {
               authorizationUrl: `${baseUrl}/mcp/authorize`,
@@ -37,7 +37,7 @@ export async function GET() {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Personal Access Token (pm_live_...) from PerMang Settings',
+          description: 'Personal Access Token (pm_live_...) from PerMan Settings',
         },
       },
     },
@@ -63,7 +63,7 @@ export async function GET() {
         post: {
           operationId: 'createTask',
           summary: 'Create a new task',
-          description: 'Create a task in PerMang with optional category, project, priority, and due date.',
+          description: 'Create a task in PerMan with optional category, project, priority, and due date.',
           requestBody: {
             required: true,
             content: {

@@ -31,8 +31,8 @@ export default function InboxPage() {
   useEffect(() => {
     fetchInbox();
     const handleCreated = () => fetchInbox();
-    window.addEventListener('permang:task_created', handleCreated);
-    return () => window.removeEventListener('permang:task_created', handleCreated);
+    window.addEventListener('perman:task_created', handleCreated);
+    return () => window.removeEventListener('perman:task_created', handleCreated);
   }, []);
 
   const handleQuickAdd = async (e: React.FormEvent) => {

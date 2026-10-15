@@ -1,6 +1,6 @@
 -- ==============================================================================
--- PerMang (Personal Management) Database Schema
--- Multi-Tenant Project Separation: All PerMang tables are strictly prefixed with 'pm_'
+-- PerMan (Personal Management) Database Schema
+-- Multi-Tenant Project Separation: All PerMan tables are strictly prefixed with 'pm_'
 -- Project: random (Supabase)
 -- Safe to run alongside 'cf_' (CalFlow) and 'ir_' (InstaReels) tables.
 -- ==============================================================================
@@ -244,7 +244,7 @@ CREATE TABLE IF NOT EXISTS pm_mcp_tokens (
     access_token TEXT PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     client_id TEXT NOT NULL,
-    token_name TEXT DEFAULT 'PerMang MCP Access Token',
+    token_name TEXT DEFAULT 'PerMan MCP Access Token',
     expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '90 days'),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_used_at TIMESTAMPTZ
@@ -253,7 +253,7 @@ CREATE TABLE IF NOT EXISTS pm_mcp_tokens (
 CREATE INDEX IF NOT EXISTS idx_pm_mcp_tokens_user ON pm_mcp_tokens(user_id);
 
 -- ------------------------------------------------------------------------------
--- 12. Enable Row Level Security (RLS) on all PerMang tables
+-- 12. Enable Row Level Security (RLS) on all PerMan tables
 -- ------------------------------------------------------------------------------
 ALTER TABLE pm_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pm_categories ENABLE ROW LEVEL SECURITY;
@@ -483,12 +483,12 @@ $$ LANGUAGE plpgsql;
 -- for all sibling projects.
 --
 -- User profile creation (pm_profiles) and default category/project seeding
--- (pm_seed_user_defaults) are handled safely in the PerMang application layer
+-- (pm_seed_user_defaults) are handled safely in the PerMan application layer
 -- (see src/lib/services/profile.service.ts).
 --
 -- DROP TRIGGER IF EXISTS pm_on_auth_user_created ON auth.users;
 -- DROP FUNCTION IF EXISTS pm_handle_new_user();
 
 -- ==============================================================================
--- End of PerMang Schema
+-- End of PerMan Schema
 -- ==============================================================================

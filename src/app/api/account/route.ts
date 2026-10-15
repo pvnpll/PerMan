@@ -87,5 +87,5 @@ export async function DELETE() {
   await admin.from(PM_TABLES.MCP_IDEMPOTENCY_KEYS).delete().eq('user_id', user.id);
   await admin.from(PM_TABLES.PROFILES).delete().eq('id', user.id);
 
-  return NextResponse.json({ success: true, message: 'All PerMang data cleared.' });
+  return NextResponse.json({ success: true, message: 'All PerMan data cleared.' });
 }

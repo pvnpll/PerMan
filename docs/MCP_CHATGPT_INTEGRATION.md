@@ -1,6 +1,6 @@
 # ChatGPT & Claude Remote MCP Integration Guide
 
-PerMang includes an official implementation of the **Model Context Protocol (MCP)** using `@modelcontextprotocol/sdk` and `WebStandardStreamableHTTPServerTransport`.
+PerMan includes an official implementation of the **Model Context Protocol (MCP)** using `@modelcontextprotocol/sdk` and `WebStandardStreamableHTTPServerTransport`.
 
 ---
 
@@ -43,10 +43,10 @@ PerMang includes an official implementation of the **Model Context Protocol (MCP
    - **Authorization URL**: `https://<your-deployed-domain>/mcp/authorize`
    - **Token URL**: `https://<your-deployed-domain>/api/mcp/token`
    - **Scope**: `tasks:read tasks:write reminders:write`
-4. ChatGPT will now prompt you to authorize your PerMang account on your first prompt!
+4. ChatGPT will now prompt you to authorize your PerMan account on your first prompt!
 
 ### Option B: Via Personal Access Token (PAT)
-1. Log in to PerMang and navigate to **Settings > ChatGPT MCP Integration**.
+1. Log in to PerMan and navigate to **Settings > ChatGPT MCP Integration**.
 2. Click **Generate New Token**.
 3. Copy the token (e.g. `pm_pat_...`).
 4. In ChatGPT Custom GPT Actions, configure Authentication as **API Key**:
@@ -64,10 +64,10 @@ npx tsx scripts/test-mcp.ts
 Expected output:
 ```
 ========================================================
-🤖 PerMang Remote MCP Server Smoke Test
+🤖 PerMan Remote MCP Server Smoke Test
 ========================================================
 
-1. Connecting in-memory MCP client to PerMang server...
+1. Connecting in-memory MCP client to PerMan server...
    ✓ Handshake successful!
 
 2. Querying available tools (tools/list)...
@@ -77,3 +77,39 @@ Expected output:
 3. Testing tool argument validation on "create_task"...
    ✓ Schema validation verified!
 ```
+
+
+## Personal memory and automatic organization
+
+When connected through MCP, ChatGPT chooses `category_name`, `subcategory_name`,
+and `project_name` from the conversation when calling `create_task`. Missing groups
+are created automatically; existing names are reused case-insensitively within
+their parent. New projects also receive a project record for progress tracking.
+
+- Project work defaults to `Projects → project_name → task`.
+- Other tasks default to `Personal → subcategory_name → task`. When no subgroup
+  is supplied, the natural-language parser can suggest one (health, finances,
+  shopping, etc.). Unclassified tasks stay under Personal.
+- Explicit category names allow other life areas, such as Work or Learning.
+- Put full requirements, acceptance criteria, context, and next steps in
+  `description`, and the Jira or reference link in `url`. These are persisted
+  and returned by `get_task`; no Jira connection or ticket import is implied.
+- Use `get_projects` or `list_categories` to discover IDs, then `get_tasks` or
+  `search_tasks` with `project_id`, `category_id`, and `status: "NEXT"` to recall
+  next actions. Search also supports pagination through `offset`.
+
+Example create_task input:
+
+```json
+{
+  "title": "APP-42: Fix sign-in redirect",
+  "project_name": "My App",
+  "description": "Return users to the page they requested after signing in. Acceptance criteria: preserve the requested path; fall back to the dashboard. Next: reproduce the redirect failure.",
+  "status": "NEXT",
+  "priority": "HIGH"
+}
+```
+
+Categorization uses ChatGPT's reasoning through MCP plus a lightweight parser
+fallback; the app does not run a separate background AI classifier. Existing
+uncategorized tasks are preserved and are not automatically migrated.

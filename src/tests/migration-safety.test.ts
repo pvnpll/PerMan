@@ -47,7 +47,7 @@ describe('Database Migration Safety & Isolation', () => {
     expect(sql.toLowerCase()).not.toContain('truncate');
   });
 
-  it('enforces Row Level Security (RLS) on all PerMang application tables', () => {
+  it('enforces Row Level Security (RLS) on all PerMan application tables', () => {
     const tablesWithRls = [
       'pm_profiles',
       'pm_categories',

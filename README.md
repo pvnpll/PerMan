@@ -1,12 +1,12 @@
-# PerMang — Personal Management & Task Reminder App
+# PerMan — Personal Management & Task Reminder App
 
-> **PerMang** (*Personal Management*) is a personal external memory for tasks, reminders, commitments, purchases, projects, routines, and everyday life.
+> **PerMan** (*Personal Management*) is a personal external memory for tasks, reminders, commitments, purchases, projects, routines, and everyday life.
 
 ---
 
 ## 🌟 Overview
 
-PerMang is built to be your reliable second brain:
+PerMan is built to be your reliable second brain:
 - **Instant Natural-Language Task Capture**: Capture tasks like *"Fix the Calflow water logging API tomorrow"*, *"Buy headphones from Amazon next month"*, or *"Remind me every Monday at 9 AM to review my tasks"*.
 - **Multi-Tenant Database Isolation**: Operates safely inside the shared Supabase project `random` using strict `pm_` table prefixing, Row Level Security (RLS), and zero interference with other applications (`cf_*`, `ir_*`).
 - **Remote Model Context Protocol (MCP)**: Native remote MCP server allowing ChatGPT and Claude to manage tasks, retrieve summaries, and schedule reminders on your behalf.
@@ -40,8 +40,8 @@ PerMang is built to be your reliable second brain:
 
 ### 2. Installation
 ```bash
-git clone <repository-url> permang
-cd permang
+git clone <repository-url> perman
+cd perman
 npm install
 ```
 
@@ -62,28 +62,28 @@ SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Reminder Engine Cron Security
-CRON_SECRET=permang-cron-secret-2026
+CRON_SECRET=perman-cron-secret-2026
 
 # Notification Delivery
 NOTIFICATION_PROVIDER=console # or 'resend'
 RESEND_API_KEY=
-NOTIFICATION_FROM_EMAIL=notifications@permang.app
+NOTIFICATION_FROM_EMAIL=notifications@perman.app
 ```
 
 ---
 
 ## 🗄️ Database Setup & Supabase Migration
 
-PerMang shares the Supabase project **`random`** with other applications. **Every PerMang table is strictly isolated with the `pm_` prefix.**
+PerMan shares the Supabase project **`random`** with other applications. **Every PerMan table is strictly isolated with the `pm_` prefix.**
 
 ### Database Schema Files:
-- [`supabase/migrations/001_permang_initial_schema.sql`](file:///Users/pavan/Build/permang/supabase/migrations/001_permang_initial_schema.sql): Creates all 12 `pm_` tables, constraints, indexes, RLS policies, trigger functions, and seeds default categories.
-- [`supabase/migrations/002_permang_seed_existing_users.sql`](file:///Users/pavan/Build/permang/supabase/migrations/002_permang_seed_existing_users.sql): Safely populates existing auth users with default taxonomy.
+- [`supabase/migrations/001_permang_initial_schema.sql`](supabase/migrations/001_permang_initial_schema.sql): Creates all 12 `pm_` tables, constraints, indexes, RLS policies, trigger functions, and seeds default categories.
+- [`supabase/migrations/002_permang_seed_existing_users.sql`](supabase/migrations/002_permang_seed_existing_users.sql): Safely populates existing auth users with default taxonomy.
 
 ### Applying Migrations:
 1. Open the [Supabase Dashboard](https://supabase.com/dashboard) and navigate to project **`random`** (`shfkfqdfahnxodewxupi`).
 2. Go to the **SQL Editor**.
-3. Copy the contents of [`supabase/migrations/001_permang_initial_schema.sql`](file:///Users/pavan/Build/permang/supabase/migrations/001_permang_initial_schema.sql).
+3. Copy the contents of [`supabase/migrations/001_permang_initial_schema.sql`](supabase/migrations/001_permang_initial_schema.sql).
 4. Run the script.
 
 ### Verify Schema Status:
@@ -96,7 +96,7 @@ npx tsx scripts/db-check.ts
 
 ## 🤖 ChatGPT & Claude Remote MCP Integration
 
-PerMang exposes a remote MCP server supporting both ChatGPT and Claude via Streamable HTTP / Server-Sent Events (SSE).
+PerMan exposes a remote MCP server supporting both ChatGPT and Claude via Streamable HTTP / Server-Sent Events (SSE).
 
 ### MCP Endpoints:
 - **MCP Tool Transport**: `https://<your-domain>/api/mcp`
@@ -124,7 +124,7 @@ PerMang exposes a remote MCP server supporting both ChatGPT and Claude via Strea
    - Client ID: `chatgpt-mcp`
    - Authorization URL: `https://<your-domain>/mcp/authorize`
    - Token URL: `https://<your-domain>/api/mcp/token`
-3. Alternatively, generate a **Personal Access Token (PAT)** in **Settings > ChatGPT MCP Integration** inside PerMang and supply it as a `Bearer` token in the Custom GPT header.
+3. Alternatively, generate a **Personal Access Token (PAT)** in **Settings > ChatGPT MCP Integration** inside PerMan and supply it as a `Bearer` token in the Custom GPT header.
 
 ### Testing MCP Locally:
 Run the automated MCP smoke test client:
@@ -136,7 +136,7 @@ npx tsx scripts/test-mcp.ts
 
 ## ⏰ Reminder Engine & Scheduler
 
-PerMang features a server-side reminder processor that runs independently of an open browser or ChatGPT session.
+PerMan features a server-side reminder processor that runs independently of an open browser or ChatGPT session.
 
 ### Processing Endpoint:
 - `GET/POST /api/cron/reminders`
@@ -178,11 +178,11 @@ Test coverage includes:
 
 1. Push your repository to GitHub.
 2. Import the project into [Vercel](https://vercel.com).
-3. Set the Root Directory to `permang` (if inside a monorepo) or root.
+3. Set the Root Directory to `perman` (if inside a monorepo) or root.
 4. Add the Environment Variables:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
-   - `NEXT_PUBLIC_APP_URL` (set to your production Vercel URL, e.g. `https://permang.vercel.app`)
+   - `NEXT_PUBLIC_APP_URL` (set to your production Vercel URL, e.g. `https://perman.vercel.app`)
    - `CRON_SECRET`
 5. Deploy.

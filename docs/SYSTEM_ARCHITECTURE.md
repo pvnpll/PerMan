@@ -1,8 +1,8 @@
-# PerMang System Architecture
+# PerMan System Architecture
 
 ## 1. Architectural Philosophy: Three Front Doors, One Service Layer
 
-PerMang (*Personal Management*) acts as a persistent personal external memory across multiple interaction surfaces:
+PerMan (*Personal Management*) acts as a persistent personal external memory across multiple interaction surfaces:
 1. **The Web Application**: Next.js App Router (Dashboard, Inbox, All Tasks, Categories, Projects, Calendar, Settings).
 2. **AI Assistants via Remote MCP**: ChatGPT and Claude operating remotely via Model Context Protocol tools.
 3. **Automated Scheduler**: Background reminder processor and recurrence engine.
@@ -18,10 +18,10 @@ All three surfaces funnel through a single shared TypeScript service layer:
 
 ## 2. Database Isolation Model (Supabase Project `random`)
 
-PerMang shares the existing Supabase project `random` with sibling applications (`cf_*` Calflow, `ir_*` InstaReels).
+PerMan shares the existing Supabase project `random` with sibling applications (`cf_*` Calflow, `ir_*` InstaReels).
 
 ### Mandatory Table Prefix: `pm_`
-Every PerMang database object strictly uses the prefix `pm_`:
+Every PerMan database object strictly uses the prefix `pm_`:
 - `pm_profiles`: User timezone, full name, notification preferences.
 - `pm_categories`: Hierarchical categories and subcategories with sort order, icons, and colors.
 - `pm_projects`: Project records with target dates, colors, and progress indicators.

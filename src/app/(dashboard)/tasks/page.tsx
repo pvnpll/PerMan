@@ -69,8 +69,8 @@ export default function AllTasksPage() {
 
   useEffect(() => {
     const handleCreated = () => fetchTasks();
-    window.addEventListener('permang:task_created', handleCreated);
-    return () => window.removeEventListener('permang:task_created', handleCreated);
+    window.addEventListener('perman:task_created', handleCreated);
+    return () => window.removeEventListener('perman:task_created', handleCreated);
   }, []);
 
   const resetFilters = () => {

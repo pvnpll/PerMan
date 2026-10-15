@@ -20,7 +20,7 @@ export async function ensureUserProfile(
       {
         id: userId,
         email: email || '',
-        full_name: fullName || email || 'PerMang User',
+        full_name: fullName || email || 'PerMan User',
         timezone: timezone || 'Asia/Kolkata',
       },
       { onConflict: 'id' }

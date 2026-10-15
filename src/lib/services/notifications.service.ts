@@ -48,9 +48,9 @@ export async function sendTaskReminderNotification(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: process.env.NOTIFICATION_FROM_EMAIL || 'notifications@permang.app',
+          from: process.env.NOTIFICATION_FROM_EMAIL || 'notifications@perman.app',
           to: payload.toEmail,
-          subject: `⏰ PerMang Reminder: ${payload.taskTitle} [${payload.priority}]`,
+          subject: `⏰ PerMan Reminder: ${payload.taskTitle} [${payload.priority}]`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
               <h2 style="color: #111827; margin-bottom: 8px;">⏰ Task Reminder</h2>
@@ -62,7 +62,7 @@ export async function sendTaskReminderNotification(
                 ${payload.projectName ? `<p style="margin: 4px 0;"><strong>Project:</strong> ${payload.projectName}</p>` : ''}
                 ${payload.dueFormatted ? `<p style="margin: 4px 0;"><strong>Due Date:</strong> ${payload.dueFormatted}</p>` : ''}
               </div>
-              <a href="${payload.taskUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">View in PerMang</a>
+              <a href="${payload.taskUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">View in PerMan</a>
             </div>
           `,
         }),
@@ -82,7 +82,7 @@ export async function sendTaskReminderNotification(
 
   // Default fallback: Structured Console Notification & Delivery Log
   console.log(`\n======================================================`);
-  console.log(`🔔 [PerMang Scheduled Reminder Dispatched]`);
+  console.log(`🔔 [PerMan Scheduled Reminder Dispatched]`);
   console.log(`📬 To: ${payload.toEmail || 'User'}`);
   console.log(`📌 Task: ${payload.taskTitle} [Priority: ${payload.priority}]`);
   if (payload.dueFormatted) console.log(`📅 Due: ${payload.dueFormatted}`);

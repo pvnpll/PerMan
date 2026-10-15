@@ -78,13 +78,13 @@ export default function SettingsPage() {
 
   const handleDeleteAllData = async () => {
     const confirmation = prompt(
-      'Type "DELETE" to clear all your PerMang tasks, categories, projects, and reminders.\n(Your Supabase account and other apps remain untouched).'
+      'Type "DELETE" to clear all your PerMan tasks, categories, projects, and reminders.\n(Your Supabase account and other apps remain untouched).'
     );
     if (confirmation !== 'DELETE') return;
 
     try {
       await fetch('/api/account', { method: 'DELETE' });
-      alert('PerMang data cleared successfully.');
+      alert('PerMan data cleared successfully.');
       window.location.reload();
     } catch (err: any) {
       alert(`Error: ${err.message}`);
@@ -169,7 +169,7 @@ export default function SettingsPage() {
         </div>
 
         <p className="text-xs text-slate-400">
-          Connect PerMang to ChatGPT Custom GPTs or Claude. Use natural language in ChatGPT to create tasks, search your history, check daily summaries, and schedule reminders.
+          Connect PerMan to ChatGPT Custom GPTs or Claude. Use natural language in ChatGPT to create tasks, search your history, check daily summaries, and schedule reminders.
         </p>
 
         {/* MCP Configuration Details */}
@@ -240,7 +240,7 @@ export default function SettingsPage() {
         </h3>
 
         <p className="text-xs text-slate-400">
-          Export your entire PerMang database (all tasks, categories, projects, reminders, and delivery logs) as JSON anytime.
+          Export your entire PerMan database (all tasks, categories, projects, reminders, and delivery logs) as JSON anytime.
         </p>
 
         <div className="flex flex-wrap gap-3 pt-2">
@@ -258,7 +258,7 @@ export default function SettingsPage() {
             className="py-2.5 px-4 rounded-xl bg-red-950/60 hover:bg-red-900/80 text-red-200 text-xs font-semibold flex items-center space-x-2 border border-red-800/80 transition cursor-pointer"
           >
             <Trash2 className="w-4 h-4 text-red-400" />
-            <span>Clear PerMang Data</span>
+            <span>Clear PerMan Data</span>
           </button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { createPerMangMcpServer, McpAuthInfo } from './server';
+import { createPerManMcpServer, McpAuthInfo } from './server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PM_TABLES } from '@/lib/db-tables';
 import { isValidTimezone, DEFAULT_TIMEZONE } from '@/lib/date';
@@ -11,7 +11,7 @@ export async function handleStatelessMcpRequest(webRequest: Request, authInfo: M
     enableJsonResponse: true,
   } as any);
 
-  const server = createPerMangMcpServer(authInfo);
+  const server = createPerManMcpServer(authInfo);
   await server.connect(transport);
   return transport.handleRequest(webRequest, {
     authInfo: {

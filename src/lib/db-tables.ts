@@ -1,7 +1,7 @@
 /**
 -- ==============================================================================
--- PerMang Database Table Constants
--- All PerMang tables are strictly isolated with prefix 'pm_'
+-- PerMan Database Table Constants
+-- All PerMan tables are strictly isolated with prefix 'pm_'
 -- Project: random (Supabase)
 -- ==============================================================================
 */

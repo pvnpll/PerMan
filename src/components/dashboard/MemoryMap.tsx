@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowUpRight, Focus, Minus, Plus, Network, Circle } from 'lucide-react';
 import type { Task } from '@/lib/types';
 import type { MemoryGroup } from '@/lib/memory-map';
@@ -11,6 +11,20 @@ export function MemoryMap({ groups, onSelectTask }: { groups: MemoryGroup[]; onS
   const [path, setPath] = useState<string[]>([]);
   const [zoom, setZoom] = useState(1);
   const [page, setPage] = useState(0);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const graphView = path.join('/');
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    const center = () => {
+      surface.scrollLeft = Math.max(0, (surface.scrollWidth - surface.clientWidth) / 2);
+    };
+    const observer = new ResizeObserver(center);
+    observer.observe(surface);
+    center();
+    return () => observer.disconnect();
+  }, [zoom, graphView, groups.length]);
   let current: MemoryGroup | undefined;
   let level = groups;
   for (const id of path) {
@@ -38,7 +52,7 @@ export function MemoryMap({ groups, onSelectTask }: { groups: MemoryGroup[]; onS
       <button onClick={() => { setPath([]); setZoom(1); setPage(0); }} className="text-xs text-zinc-400 hover:text-white">All memory{group && <span className="text-zinc-200"> / {group.name}</span>}</button>
       {path.length > 0 && <button onClick={() => (setPath(p => p.slice(0, -1)), setPage(0))} className="flex items-center gap-1 text-xs text-zinc-300"><ArrowLeft size={13} /> Back</button>}
     </div>
-    {nodes.length === 0 ? <div className="flex h-[440px] flex-col items-center justify-center gap-3 px-6 text-center"><Network className="text-zinc-500" size={38} strokeWidth={1} /><h3 className="text-sm text-zinc-200">Your memory starts here</h3><p className="max-w-xs text-xs leading-6 text-zinc-500">Capture your first task or add one through ChatGPT. Your life areas and projects will appear here.</p></div> : <div className="memory-map-surface overflow-auto">
+    {nodes.length === 0 ? <div className="flex h-[440px] flex-col items-center justify-center gap-3 px-6 text-center"><Network className="text-zinc-500" size={38} strokeWidth={1} /><h3 className="text-sm text-zinc-200">Your memory starts here</h3><p className="max-w-xs text-xs leading-6 text-zinc-500">Capture your first task or add one through ChatGPT. Your life areas and projects will appear here.</p></div> : <div ref={surfaceRef} className="memory-map-surface overflow-auto">
       <svg viewBox="0 0 880 530" style={{ width: `${zoom * 100}%`, minWidth: 620, height: 'auto', minHeight: 390 }} aria-label="Interactive memory map. Select a life area to explore its projects and tasks.">
         <defs><pattern id="memory-dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#ffffff" opacity=".09" /></pattern></defs>
         <rect width="880" height="530" fill="url(#memory-dots)" />

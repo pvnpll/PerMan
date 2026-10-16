@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  --background: #0c0e12;
+  --foreground: #e4e4e7;
 }
 
 @theme inline {
@@ -12,27 +13,22 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: #0c0e12;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #0c0e12;
+  color: #e4e4e7;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
-/* A quiet, consistent dark workspace. */
-:root {
-  color-scheme: dark;
-  --background: #0c0e12;
-  --foreground: #e4e4e7;
+/* Memory overview design system — simple, professional black. */
+.memory-panel {
+  border: 1px solid rgb(255 255 255 / .07);
+  border-radius: 12px;
+  background: #111318;
 }
-body { font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; }
-.memory-panel { border: 1px solid rgb(255 255 255 / .07); border-radius: 12px; background: #111318; }
 .memory-home button, .memory-home a { transition: background-color .15s, color .15s, border-color .15s; }
 .memory-home button:not(:disabled) { cursor: pointer; }
 .memory-home :focus-visible { outline: 2px solid #a5b4fc; outline-offset: 4px; }
@@ -41,3 +37,65 @@ body { font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; }
 .map-control:hover { background: rgb(255 255 255 / .06); color: white; }
 .map-control:disabled { opacity: .3; }
 .memory-map-surface { scrollbar-width: thin; scrollbar-color: #30343d #111318; }
+
+/* Shared Memory primitives used by every page */
+.memory-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .2em;
+  color: #71717a;
+}
+.memory-eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #34d399;
+}
+.memory-title {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: #f4f4f5;
+  line-height: 1.25;
+}
+.memory-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #71717a;
+}
+.memory-input {
+  background: #0c0e12;
+  border: 1px solid rgb(255 255 255 / .08);
+  border-radius: 8px;
+  color: #e4e4e7;
+}
+.memory-input::placeholder { color: #52525b; }
+.memory-input:focus { outline: none; border-color: rgb(255 255 255 / .25); }
+.memory-btn-primary {
+  background: #e4e4e7;
+  color: #09090b;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background-color .15s;
+}
+.memory-btn-primary:hover { background: #ffffff; }
+.memory-btn-primary:disabled { opacity: .35; }
+.memory-btn-secondary {
+  border: 1px solid rgb(255 255 255 / .1);
+  color: #e4e4e7;
+  border-radius: 8px;
+  transition: background-color .15s, border-color .15s;
+}
+.memory-btn-secondary:hover { background: rgb(255 255 255 / .05); }
+.memory-chip {
+  border: 1px solid rgb(255 255 255 / .1);
+  border-radius: 6px;
+  color: #a1a1aa;
+}
+select.memory-input option { background: #111318; color: #e4e4e7; }
+input[type="datetime-local"].memory-input::-webkit-calendar-picker-indicator { filter: invert(.6); }

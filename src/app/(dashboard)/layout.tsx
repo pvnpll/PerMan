@@ -55,7 +55,7 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
         {/* Top Header */}
         <header className="sticky top-0 z-30 h-16 bg-[#0c0e12]/95 backdrop-blur-md border-b border-white/[.07] px-4 md:px-8 flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-xs text-slate-400">
+          <div className="flex items-center space-x-2 text-xs text-zinc-400">
             <Clock className="w-3.5 h-3.5 text-zinc-500" />
             <span>{currentTime}</span>
           </div>

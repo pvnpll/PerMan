@@ -36,7 +36,7 @@ export function BottomNav({ onOpenQuickAdd }: BottomNavProps) {
             key={link.href}
             href={link.href}
             className={`flex flex-col items-center py-1.5 px-3 rounded-lg text-xs font-medium transition ${
-              isActive ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'
+              isActive ? 'text-zinc-300' : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
             <Icon className="w-5 h-5 mb-1" />
@@ -49,7 +49,7 @@ export function BottomNav({ onOpenQuickAdd }: BottomNavProps) {
       <button
         type="button"
         onClick={onOpenQuickAdd}
-        className="w-12 h-12 -mt-5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-600/40 border-2 border-slate-900 transition active:scale-95"
+        className="w-12 h-12 -mt-5 rounded-full bg-zinc-200 hover:bg-white text-zinc-900 flex items-center justify-center shadow-none  border-2 border-[#0c0e12] transition active:scale-95"
       >
         <Plus className="w-6 h-6" />
       </button>
@@ -62,7 +62,7 @@ export function BottomNav({ onOpenQuickAdd }: BottomNavProps) {
             key={link.href}
             href={link.href}
             className={`flex flex-col items-center py-1.5 px-3 rounded-lg text-xs font-medium transition ${
-              isActive ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'
+              isActive ? 'text-zinc-300' : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
             <Icon className="w-5 h-5 mb-1" />

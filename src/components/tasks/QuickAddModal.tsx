@@ -144,15 +144,15 @@ export function QuickAddModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between p-4 border-b border-slate-800">
+      <div className="bg-[#111318] border border-white/[.07] rounded-xl w-full max-w-lg shadow-none overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between p-4 border-b border-white/[.07]">
           <div className="flex items-center space-x-2">
-            <Sparkles className="w-5 h-5 text-indigo-400" />
-            <span className="font-semibold text-white text-base">Quick Capture</span>
+            <Sparkles className="w-5 h-5 text-zinc-300" />
+            <span className="font-semibold text-zinc-100 text-base">Quick Capture</span>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+            className="text-zinc-400 hover:text-zinc-100 p-1 rounded-lg hover:bg-white/[.06] transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -160,7 +160,7 @@ export function QuickAddModal({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
-            <div className="p-3 bg-red-950/60 border border-red-800 rounded-xl text-red-200 text-xs">
+            <div className="memory-panel p-3 text-zinc-200 text-xs">
               {error}
             </div>
           )}
@@ -172,41 +172,41 @@ export function QuickAddModal({
               value={rawText}
               onChange={(e) => handleTextChange(e.target.value)}
               placeholder='Type anything... e.g. "Buy headphones from Amazon next month" or "Fix Calflow API tomorrow at 5pm"'
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition resize-none"
+              className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl p-3 text-zinc-100 placeholder-zinc-600 text-sm focus:outline-none focus:border-white/25  transition resize-none"
             />
           </div>
 
           {/* Natural Language Inferred Tags */}
           {parsedPreview && (
-            <div className="flex flex-wrap gap-1.5 p-2.5 bg-slate-950/50 rounded-xl border border-slate-800/80 text-xs text-slate-300">
-              <span className="text-slate-500 font-medium">Inferred:</span>
+            <div className="flex flex-wrap gap-1.5 p-2.5 bg-white/[.02] rounded-xl border border-white/[.07] text-xs text-zinc-300">
+              <span className="text-zinc-500 font-medium">Inferred:</span>
               {parsedPreview.projectName && (
-                <span className="px-2 py-0.5 rounded-md bg-blue-950 text-blue-300 border border-blue-800/60">
+                <span className="px-2 py-0.5 rounded-md memory-chip text-zinc-300 bg-white/[.03]">
                   📁 {parsedPreview.projectName}
                 </span>
               )}
               {parsedPreview.categoryName && (
-                <span className="px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-800/60">
+                <span className="px-2 py-0.5 rounded-md memory-chip text-zinc-300 bg-white/[.03]">
                   🏷️ {parsedPreview.categoryName}
                 </span>
               )}
               {parsedPreview.merchant && (
-                <span className="px-2 py-0.5 rounded-md bg-pink-950 text-pink-300 border border-pink-800/60">
+                <span className="memory-chip text-zinc-300 bg-white/[.03] px-2 py-0.5">
                   🛒 {parsedPreview.merchant}
                 </span>
               )}
               {parsedPreview.dueDate && (
-                <span className="px-2 py-0.5 rounded-md bg-amber-950 text-amber-300 border border-amber-800/60">
+                <span className="px-2 py-0.5 rounded-md memory-chip text-zinc-300 bg-white/[.03]">
                   📅 Due {new Date(parsedPreview.dueDate).toLocaleDateString()}
                 </span>
               )}
               {parsedPreview.reminderTime && (
-                <span className="px-2 py-0.5 rounded-md bg-purple-950 text-purple-300 border border-purple-800/60">
+                <span className="px-2 py-0.5 rounded-md memory-chip text-zinc-300 bg-white/[.03]">
                   ⏰ Reminder {new Date(parsedPreview.reminderTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               )}
               {parsedPreview.priority && parsedPreview.priority !== 'MEDIUM' && (
-                <span className="px-2 py-0.5 rounded-md bg-red-950 text-red-300 border border-red-800/60">
+                <span className="px-2 py-0.5 rounded-md memory-chip text-zinc-100 bg-white/[.05]">
                   ⚡ {parsedPreview.priority}
                 </span>
               )}
@@ -216,13 +216,13 @@ export function QuickAddModal({
           {/* Quick Controls */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                 Priority
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
               >
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
@@ -232,13 +232,13 @@ export function QuickAddModal({
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                 Status
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
               >
                 <option value="INBOX">Inbox</option>
                 <option value="NEXT">Next Action</option>
@@ -253,49 +253,49 @@ export function QuickAddModal({
             <button
               type="button"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+              className="text-xs text-zinc-300 hover:text-zinc-300 transition"
             >
               {showAdvanced ? '- Hide Details' : '+ Add Due Date, Reminder, Project & Category'}
             </button>
           </div>
 
           {showAdvanced && (
-            <div className="space-y-3 pt-2 border-t border-slate-800">
+            <div className="space-y-3 pt-2 border-t border-white/[.07]">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                     Due Date & Time
                   </label>
                   <input
                     type="datetime-local"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                     Reminder Time
                   </label>
                   <input
                     type="datetime-local"
                     value={reminderTime}
                     onChange={(e) => setReminderTime(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                     Project
                   </label>
                   <select
                     value={projectId}
                     onChange={(e) => setProjectId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
                   >
                     <option value="">No Project</option>
                     {projects.map((p) => (
@@ -307,13 +307,13 @@ export function QuickAddModal({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                     Category
                   </label>
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
                   >
                     <option value="">No Category</option>
                     {categories.map((c) => (
@@ -326,7 +326,7 @@ export function QuickAddModal({
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                   Description / Notes
                 </label>
                 <textarea
@@ -334,7 +334,7 @@ export function QuickAddModal({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optional details..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl p-2.5 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-white/25"
                 />
               </div>
             </div>
@@ -344,14 +344,14 @@ export function QuickAddModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white transition"
+              className="px-4 py-2 text-xs font-semibold rounded-xl border border-white/[.07] text-zinc-400 hover:bg-white/[.06] hover:text-zinc-100 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !rawText.trim()}
-              className="px-5 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center space-x-1.5 shadow-lg shadow-indigo-600/30 disabled:opacity-50"
+              className="px-5 py-2 text-xs font-semibold rounded-xl bg-zinc-200 hover:bg-white text-zinc-900 transition flex items-center space-x-1.5 shadow-none  disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

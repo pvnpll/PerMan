@@ -42,7 +42,7 @@ export function Sidebar({ onOpenQuickAdd, userEmail }: SidebarProps) {
   };
 
   return (
-    <aside className="hidden md:flex flex-col w-56 bg-[#101216] border-r border-white/[.07] h-screen sticky top-0 text-slate-300 select-none">
+    <aside className="hidden md:flex flex-col w-56 bg-[#101216] border-r border-white/[.07] h-screen sticky top-0 text-zinc-300 select-none">
       {/* Brand Header */}
       <div className="p-5 flex items-center justify-between border-b border-white/[.07]">
         <Link href="/" className="flex items-center space-x-3">
@@ -50,8 +50,8 @@ export function Sidebar({ onOpenQuickAdd, userEmail }: SidebarProps) {
             PM
           </div>
           <div>
-            <div className="font-bold text-white text-base tracking-tight leading-none">PerMan</div>
-            <div className="text-[10px] text-slate-400 font-medium tracking-wider uppercase mt-1">
+            <div className="font-bold text-zinc-100 text-base tracking-tight leading-none">PerMan</div>
+            <div className="text-[10px] text-zinc-400 font-medium tracking-wider uppercase mt-1">
               Personal Memory
             </div>
           </div>
@@ -81,11 +81,11 @@ export function Sidebar({ onOpenQuickAdd, userEmail }: SidebarProps) {
               href={item.href}
               className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition ${
                 isActive
-                  ? 'bg-white/[.06] text-zinc-100 font-semibold shadow-sm'
-                  : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                  ? 'bg-white/[.06] text-zinc-100 font-semibold shadow-none'
+                  : 'text-zinc-400 hover:bg-white/[.06] hover:text-zinc-200'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-zinc-200' : 'text-slate-400'}`} />
+              <Icon className={`w-4 h-4 ${isActive ? 'text-zinc-200' : 'text-zinc-400'}`} />
               <span>{item.label}</span>
             </Link>
           );
@@ -95,16 +95,16 @@ export function Sidebar({ onOpenQuickAdd, userEmail }: SidebarProps) {
       {/* User Footer */}
       <div className="p-4 border-t border-white/[.07] flex items-center justify-between">
         <div className="truncate pr-2">
-          <div className="text-xs font-semibold text-white truncate">
+          <div className="text-xs font-semibold text-zinc-100 truncate">
             {userEmail || 'User Workspace'}
           </div>
-          <div className="text-[10px] text-slate-500">Your personal workspace</div>
+          <div className="text-[10px] text-zinc-500">Your personal workspace</div>
         </div>
         <button
           type="button"
           onClick={handleSignOut}
           title="Sign out"
-          className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition"
+          className="p-2 text-zinc-400 hover:text-zinc-400 hover:bg-white/[.06] rounded-lg transition"
         >
           <LogOut className="w-4 h-4" />
         </button>

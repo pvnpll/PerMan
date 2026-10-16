@@ -85,29 +85,26 @@ export default function AllTasksPage() {
   const hasActiveFilters = query || status || priority || categoryId || projectId || showArchived;
 
   return (
-    <div className="space-y-6">
+    <div className="memory-home space-y-6">
       <div>
-        <div className="flex items-center space-x-2 text-indigo-400 font-semibold text-xs uppercase tracking-wider mb-1">
-          <CheckSquare className="w-4 h-4" />
-          <span>Full Registry</span>
-        </div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">All Tasks</h1>
-        <p className="text-xs text-slate-400 mt-0.5">
+        <p className="memory-eyebrow">Full registry</p>
+        <h1 className="memory-title mt-3">All Tasks</h1>
+        <p className="memory-subtitle">
           Search, filter, and organize all your commitments across projects and life areas.
         </p>
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+      <div className="memory-panel p-4 space-y-3">
         {/* Search Input */}
         <div className="relative">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by title, description, or vendor..."
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+            className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl pl-10 pr-4 py-2.5 text-xs md:text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-white/25 transition"
           />
         </div>
 
@@ -117,7 +114,7 @@ export default function AllTasksPage() {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+            className="bg-[#0c0e12] border border-white/[.07] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-white/25"
           >
             <option value="">All Statuses</option>
             <option value="INBOX">Inbox</option>
@@ -132,7 +129,7 @@ export default function AllTasksPage() {
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+            className="bg-[#0c0e12] border border-white/[.07] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-white/25"
           >
             <option value="">All Priorities</option>
             <option value="LOW">Low</option>
@@ -145,7 +142,7 @@ export default function AllTasksPage() {
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+            className="bg-[#0c0e12] border border-white/[.07] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-white/25"
           >
             <option value="">All Categories</option>
             {categories.map((c) => (
@@ -159,7 +156,7 @@ export default function AllTasksPage() {
           <select
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+            className="bg-[#0c0e12] border border-white/[.07] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-white/25"
           >
             <option value="">All Projects</option>
             {projects.map((p) => (
@@ -177,7 +174,7 @@ export default function AllTasksPage() {
               setSortBy(col);
               setSortDir(dir);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+            className="bg-[#0c0e12] border border-white/[.07] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-white/25"
           >
             <option value="created_at-desc">Newest First</option>
             <option value="due_date-asc">Due Date (Earliest)</option>
@@ -188,12 +185,12 @@ export default function AllTasksPage() {
 
         {/* Clear Filters & Archive Toggle */}
         <div className="flex items-center justify-between pt-1">
-          <label className="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer">
+          <label className="flex items-center space-x-2 text-xs text-zinc-400 cursor-pointer">
             <input
               type="checkbox"
               checked={showArchived}
               onChange={(e) => setShowArchived(e.target.checked)}
-              className="rounded-sm bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0"
+              className="rounded-sm bg-[#0c0e12] border-white/[.07] text-zinc-400 focus:ring-0"
             />
             <span>Show Archived Tasks</span>
           </label>
@@ -202,7 +199,7 @@ export default function AllTasksPage() {
             <button
               type="button"
               onClick={resetFilters}
-              className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center space-x-1"
+              className="text-xs text-zinc-300 hover:text-zinc-300 flex items-center space-x-1"
             >
               <X className="w-3.5 h-3.5" />
               <span>Reset Filters</span>
@@ -213,17 +210,17 @@ export default function AllTasksPage() {
 
       {/* Task List */}
       <div className="space-y-3">
-        <div className="text-xs text-slate-400 font-medium">
+        <div className="text-xs text-zinc-400 font-medium">
           Found {tasks.length} task{tasks.length === 1 ? '' : 's'}
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-slate-500">
+          <div className="p-12 text-center text-zinc-500">
             <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
             <span className="text-xs">Loading tasks...</span>
           </div>
         ) : tasks.length === 0 ? (
-          <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500 text-xs">
+          <div className="bg-white/[.02] border border-white/[.07] rounded-xl p-12 text-center text-zinc-500 text-xs">
             No tasks match the selected criteria.
           </div>
         ) : (

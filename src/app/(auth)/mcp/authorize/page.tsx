@@ -62,48 +62,48 @@ function AuthorizeContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 text-slate-100">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+    <div className="min-h-screen bg-[#0c0e12] flex flex-col justify-center items-center p-4 text-zinc-100">
+      <div className="w-full max-w-md bg-[#111318] border border-white/[.07] rounded-xl p-6 shadow-none">
         <div className="flex items-center space-x-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-lg text-white">
+          <div className="w-10 h-10 rounded-xl bg-zinc-200 flex items-center justify-center font-semibold text-lg text-zinc-900">
             PM
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">PerMan</h1>
-            <p className="text-xs text-slate-400">Personal Management & External Memory</p>
+            <h1 className="text-xl font-bold tracking-tight text-zinc-100">PerMan</h1>
+            <p className="text-xs text-zinc-400">Personal Management & External Memory</p>
           </div>
         </div>
 
-        <div className="border-t border-slate-800 pt-5 mb-5">
-          <div className="flex items-center space-x-2 text-indigo-400 font-medium text-sm mb-2">
+        <div className="border-t border-white/[.07] pt-5 mb-5">
+          <div className="flex items-center space-x-2 text-zinc-300 font-medium text-sm mb-2">
             <ShieldCheck className="w-5 h-5" />
             <span>Connect Application</span>
           </div>
-          <p className="text-sm text-slate-300">
-            <strong className="text-white">{clientId}</strong> is requesting permission to access your PerMan workspace.
+          <p className="text-sm text-zinc-300">
+            <strong className="text-zinc-100">{clientId}</strong> is requesting permission to access your PerMan workspace.
           </p>
         </div>
 
-        <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800/80 mb-6 space-y-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <div className="bg-[#0c0e12] rounded-xl p-4 border border-white/[.07] mb-6 space-y-3">
+          <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Permissions Requested:
           </div>
-          <div className="flex items-start space-x-2 text-sm text-slate-300">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+          <div className="flex items-start space-x-2 text-sm text-zinc-300">
+            <CheckCircle2 className="w-4 h-4 text-zinc-400 mt-0.5 shrink-0" />
             <span>Create, search, and manage your personal tasks</span>
           </div>
-          <div className="flex items-start space-x-2 text-sm text-slate-300">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+          <div className="flex items-start space-x-2 text-sm text-zinc-300">
+            <CheckCircle2 className="w-4 h-4 text-zinc-400 mt-0.5 shrink-0" />
             <span>Schedule reminders and view daily summaries</span>
           </div>
-          <div className="flex items-start space-x-2 text-sm text-slate-300">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+          <div className="flex items-start space-x-2 text-sm text-zinc-300">
+            <CheckCircle2 className="w-4 h-4 text-zinc-400 mt-0.5 shrink-0" />
             <span>Organize tasks by categories and projects</span>
           </div>
         </div>
 
         {error && (
-          <div className="flex items-center space-x-2 p-3 bg-red-950/50 border border-red-800/60 rounded-xl text-red-200 text-sm mb-5">
+          <div className="flex items-center space-x-2 memory-panel p-3 text-zinc-200 text-sm mb-5">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -114,7 +114,7 @@ function AuthorizeContent() {
             type="button"
             onClick={handleCancel}
             disabled={loading}
-            className="flex-1 py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 text-sm font-medium hover:bg-slate-700/80 transition disabled:opacity-50"
+            className="flex-1 py-2.5 px-4 rounded-xl border border-white/10 bg-white/[.06] text-zinc-300 text-sm font-medium hover:bg-white/[.06] transition disabled:opacity-50"
           >
             Cancel
           </button>
@@ -122,7 +122,7 @@ function AuthorizeContent() {
             type="button"
             onClick={handleApprove}
             disabled={loading}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 disabled:opacity-50"
+            className="flex-1 py-2.5 px-4 rounded-xl bg-zinc-200 text-zinc-900 text-sm font-medium hover:bg-white transition flex items-center justify-center space-x-2 shadow-none  disabled:opacity-50"
           >
             {loading ? (
               <span>Authorizing...</span>
@@ -141,7 +141,7 @@ function AuthorizeContent() {
 
 export default function McpAuthorizePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading authorization...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#0c0e12] flex items-center justify-center text-zinc-400">Loading authorization...</div>}>
       <AuthorizeContent />
     </Suspense>
   );

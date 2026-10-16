@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { UpdateTaskSchema, UpdateProjectSchema, UpdateCategorySchema } from '../lib/validation';
 import { createPerManMcpServer } from '../lib/mcp/server';
 
 describe('Remote MCP Server Specification', () => {
@@ -10,12 +11,18 @@ describe('Remote MCP Server Specification', () => {
     timezone: 'Asia/Kolkata',
   };
 
+  it('does not inject defaults into partial updates', () => {
+    expect(UpdateTaskSchema.parse({})).toEqual({});
+    expect(UpdateProjectSchema.parse({})).toEqual({});
+    expect(UpdateCategorySchema.parse({})).toEqual({});
+  });
+
   it('initializes MCP server with name "perman-mcp"', () => {
     const server = createPerManMcpServer(dummyAuth);
     expect(server).toBeDefined();
   });
 
-  it('exposes all 12 required ChatGPT MCP tools', () => {
+  it('exposes all task management ChatGPT MCP tools', () => {
     const server = createPerManMcpServer(dummyAuth);
     const requiredTools = [
       'create_task',
@@ -30,6 +37,8 @@ describe('Remote MCP Server Specification', () => {
       'get_projects',
       'create_reminder',
       'get_daily_summary',
+      'update_category', 'delete_category', 'create_project', 'update_project', 'delete_project',
+      'list_reminders', 'update_reminder', 'snooze_reminder', 'dismiss_reminder', 'delete_reminder',
     ];
 
     // McpServer internal tool registry has the registered tool names

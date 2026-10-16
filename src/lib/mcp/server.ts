@@ -7,6 +7,8 @@ import * as remindersService from '@/lib/services/reminders.service';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PM_TABLES } from '@/lib/db-tables';
 import { organizeTask } from '@/lib/services/task-organization.service';
+import { UpdateTaskSchema, CreateProjectSchema, UpdateProjectSchema, UpdateCategorySchema, SearchTasksSchema } from '@/lib/validation';
+import { resolveTaskOrganizationUpdate } from '@/lib/services/mcp-organization.service';
 import { parseNaturalLanguageTask } from '@/lib/nlp-parser';
 
 export interface McpAuthInfo {
@@ -158,23 +160,9 @@ export function createPerManMcpServer(authInfo: McpAuthInfo) {
   server.tool(
     'get_tasks',
     'Get tasks, including next actions for a project or category; use get_projects or list_categories for IDs',
-    {
-      category_id: z.string().uuid().optional(),
-      project_id: z.string().uuid().optional(),
-      status: z.enum(['INBOX', 'NEXT', 'SCHEDULED', 'WAITING', 'DONE', 'CANCELLED']).optional(),
-      limit: z.number().int().min(1).max(100).optional().default(20),
-    },
+    SearchTasksSchema.shape,
     async (args) => {
-      const res = await tasksService.getTasks(userId, {
-        category_id: args.category_id,
-        project_id: args.project_id,
-        status: args.status,
-        limit: args.limit || 20,
-        offset: 0,
-        archived: false,
-        sort_by: 'created_at',
-        sort_direction: 'desc',
-      });
+      const res = await tasksService.getTasks(userId, args);
 
       return jsonResponse(res);
     }
@@ -199,25 +187,22 @@ export function createPerManMcpServer(authInfo: McpAuthInfo) {
   // 5. tool: update_task
   server.tool(
     'update_task',
-    'Update an existing task in PerMan',
+    'Update any task details and organization. Assign category_name and subcategory_name (for example Shopping & Purchases / Fitness & Nutrition), or project_name; missing names are created. Alternatively use owned UUIDs. Omitted fields are preserved; null clears a nullable field. archived_at=null restores a task; an ISO timestamp archives it.',
     {
-      task_id: z.string().uuid().describe('The task UUID'),
-      title: z.string().optional(),
-      description: z.string().optional(),
-      status: z.enum(['INBOX', 'NEXT', 'SCHEDULED', 'WAITING', 'DONE', 'CANCELLED']).optional(),
-      priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
-      due_date: z.string().optional().describe('ISO 8601 string or null'),
-      reminder_time: z.string().optional().describe('ISO 8601 string or null'),
+      ...UpdateTaskSchema.omit({ source: true }).shape,
+      task_id: z.string().uuid(),
+      category_name: z.string().trim().min(1).max(100).optional(),
+      subcategory_name: z.string().trim().min(1).max(100).nullable().optional(),
+      project_name: z.string().trim().min(1).max(100).nullable().optional(),
     },
     async (args) => {
-      const updated = await tasksService.updateTask(userId, args.task_id, {
-        title: args.title,
-        description: args.description,
-        status: args.status,
-        priority: args.priority,
-        due_date: args.due_date,
-        reminder_time: args.reminder_time,
+      const { task_id, category_name, subcategory_name, project_name, ...fields } = args;
+      const current = await tasksService.getTaskById(userId, task_id);
+      if (!current) throw new Error('Task not found or access denied');
+      const organization = await resolveTaskOrganizationUpdate(userId, current, {
+        ...fields, category_name, subcategory_name, project_name,
       });
+      const updated = await tasksService.updateTask(userId, task_id, { ...fields, ...organization });
 
       return jsonResponse({
         success: true,
@@ -325,6 +310,7 @@ export function createPerManMcpServer(authInfo: McpAuthInfo) {
       remind_at: z.string().describe('ISO 8601 timestamp for the reminder'),
     },
     async (args) => {
+      if (!await tasksService.getTaskById(userId, args.task_id)) throw new Error('Task not found or access denied');
       const reminder = await remindersService.createReminder(
         userId,
         args.task_id,
@@ -349,6 +335,66 @@ export function createPerManMcpServer(authInfo: McpAuthInfo) {
       return jsonResponse(summary);
     }
   );
+
+  server.tool('update_category', 'Rename, style, reorder, archive or restore a category or subcategory. Tasks retain their assignments.', {
+    category_id: z.string().uuid(), ...UpdateCategorySchema.omit({ parent_id: true }).shape,
+  }, async ({ category_id, ...fields }) => jsonResponse({ category: await categoriesService.updateCategory(userId, category_id, fields) }));
+
+  server.tool('delete_category', 'Permanently delete a category and its subcategories. Associated tasks remain, with affected category links removed.', {
+    category_id: z.string().uuid(),
+  }, async ({ category_id }) => jsonResponse({ success: await categoriesService.deleteCategory(userId, category_id) }));
+
+  const validateProjectCategory = async (id?: string | null) => {
+    if (!id) return;
+    const roots = await categoriesService.getCategories(userId);
+    if (!roots.flatMap(c => [c, ...(c.subcategories || [])]).some(c => c.id === id)) throw new Error('Category not found or access denied');
+  };
+  server.tool('create_project', 'Create a project with description, category, status, styling and target date.', CreateProjectSchema.shape,
+    async (args) => {
+      await validateProjectCategory(args.category_id);
+      return jsonResponse({ project: await projectsService.createProject(userId, args) });
+    });
+  server.tool('update_project', 'Edit, complete, archive or restore a project. Omitted fields are preserved.', {
+    project_id: z.string().uuid(), ...UpdateProjectSchema.shape,
+  }, async ({ project_id, ...fields }) => {
+    await validateProjectCategory(fields.category_id);
+    return jsonResponse({ project: await projectsService.updateProject(userId, project_id, fields) });
+  });
+  server.tool('delete_project', 'Permanently delete a project. Its tasks remain with the project link removed.', {
+    project_id: z.string().uuid(),
+  }, async ({ project_id }) => jsonResponse({ success: await projectsService.deleteProject(userId, project_id) }));
+
+  server.tool('list_reminders', 'List your reminders, optionally for a task. Paginate with offset and limit.', {
+    task_id: z.string().uuid().optional(), offset: z.number().int().min(0).default(0), limit: z.number().int().min(1).max(100).default(50),
+  }, async ({ task_id, offset, limit }) => {
+    let query = createAdminClient().from(PM_TABLES.REMINDERS).select('*', { count: 'exact' }).eq('user_id', userId);
+    if (task_id) query = query.eq('task_id', task_id);
+    const { data, error, count } = await query.order('remind_at').range(offset, offset + limit - 1);
+    if (error) throw new Error(error.message);
+    return jsonResponse({ reminders: data, total: count });
+  });
+  server.tool('update_reminder', 'Reschedule a reminder or change its delivery channel. Rescheduling reactivates it.', {
+    reminder_id: z.string().uuid(), remind_at: z.string().datetime({ offset: true }).optional(), channel: z.enum(['EMAIL', 'PUSH', 'IN_APP']).optional(),
+  }, async ({ reminder_id, remind_at, channel }) => {
+    const { data, error } = await createAdminClient().from(PM_TABLES.REMINDERS)
+      .update({ ...(remind_at !== undefined && { remind_at, status: 'PENDING', snoozed_until: null, error_message: null }), ...(channel !== undefined && { channel }) })
+      .eq('user_id', userId).eq('id', reminder_id).select('*').single();
+    if (error) throw new Error(error.message);
+    return jsonResponse({ reminder: data });
+  });
+  server.tool('snooze_reminder', 'Snooze a reminder for a number of minutes.', {
+    reminder_id: z.string().uuid(), minutes: z.number().int().min(1).max(43200).default(60),
+  }, async ({ reminder_id, minutes }) => jsonResponse({ reminder: await remindersService.snoozeReminder(userId, reminder_id, minutes) }));
+  server.tool('dismiss_reminder', 'Dismiss a reminder without deleting its task.', {
+    reminder_id: z.string().uuid(),
+  }, async ({ reminder_id }) => jsonResponse({ success: await remindersService.dismissReminder(userId, reminder_id) }));
+  server.tool('delete_reminder', 'Permanently delete a reminder without deleting its task.', {
+    reminder_id: z.string().uuid(),
+  }, async ({ reminder_id }) => {
+    const { error } = await createAdminClient().from(PM_TABLES.REMINDERS).delete().eq('user_id', userId).eq('id', reminder_id);
+    if (error) throw new Error(error.message);
+    return jsonResponse({ success: true });
+  });
 
   return server;
 }

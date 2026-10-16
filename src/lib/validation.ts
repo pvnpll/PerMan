@@ -42,6 +42,10 @@ export const CreateTaskSchema = z.object({
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
+  status: TaskStatusSchema.optional(),
+  priority: TaskPrioritySchema.optional(),
+  timezone: z.string().optional(),
+  source: TaskSourceSchema.optional(),
   completed_at: z.string().datetime({ offset: true }).optional().nullable(),
   archived_at: z.string().datetime({ offset: true }).optional().nullable(),
 });
@@ -55,6 +59,7 @@ export const CreateCategorySchema = z.object({
 });
 
 export const UpdateCategorySchema = CreateCategorySchema.partial().extend({
+  sort_order: z.number().int().optional(),
   is_archived: z.boolean().optional(),
 });
 
@@ -68,7 +73,9 @@ export const CreateProjectSchema = z.object({
   target_date: z.string().datetime({ offset: true }).optional().nullable(),
 });
 
-export const UpdateProjectSchema = CreateProjectSchema.partial();
+export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
+  status: z.enum(['ACTIVE', 'COMPLETED', 'ARCHIVED']).optional(),
+});
 
 export const CreateReminderSchema = z.object({
   task_id: z.string().uuid(),

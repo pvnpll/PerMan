@@ -217,6 +217,13 @@ export async function updateTask(
     throw new Error(`Failed to update task: ${error.message}`);
   }
 
+  if (input.reminder_time === null) {
+    const { error: reminderError } = await admin.from(PM_TABLES.REMINDERS)
+      .update({ status: 'DISMISSED', updated_at: new Date().toISOString() })
+      .eq('task_id', taskId).eq('user_id', userId).in('status', ['PENDING', 'SNOOZED']);
+    if (reminderError) throw new Error(`Task updated but reminder cancellation failed: ${reminderError.message}`);
+  }
+
   // Update or insert reminder if reminder_time changed
   if (input.reminder_time) {
     const { data: existingReminders } = await admin

@@ -113,3 +113,11 @@ Example create_task input:
 Categorization uses ChatGPT's reasoning through MCP plus a lightweight parser
 fallback; the app does not run a separate background AI classifier. Existing
 uncategorized tasks are preserved and are not automatically migrated.
+
+## Full task organization
+
+`update_task` accepts category/subcategory/project names or owned UUIDs, all editable task details, recurrence, nullable dates, links, amounts, and archived_at (null restores). Omitted fields are preserved. Missing names are created automatically. Use category_name="Shopping & Purchases" and subcategory_name="Fitness & Nutrition" to categorize an existing task.
+
+Additional tools: update_category, delete_category, create_project, update_project, delete_project, list_reminders, update_reminder, snooze_reminder, dismiss_reminder, delete_reminder. Category edits support name, styling, order and archive state. get_tasks supports pagination and archived tasks. All operations are scoped to the authenticated account.
+
+After deployment, refresh the PerMan connected app in ChatGPT to load the updated tool definitions. ChatGPT may still request confirmation for actions according to its own approval policy.

@@ -116,7 +116,132 @@ export default function DashboardPage() {
     {loading ? <div className="memory-panel flex h-[530px] items-center justify-center gap-3 text-sm text-zinc-400" role="status"><Loader2 size={18} className="animate-spin" /> Loading your memory…</div> : <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
       <MemoryMap groups={groups} onSelectTask={setSelected} onSelectGroup={setSelectedGroup} />
       <aside className="memory-panel min-h-[400px] p-5">
-        {selected ? <><div className="flex items-center justify-between"><p className="text-[10px] uppercase tracking-widest text-zinc-500">Task details</p><button aria-label="Close task details" onClick={() => setSelected(null)} className="text-zinc-500 hover:text-white"><X size={15} /></button></div><p className="mt-5 text-[10px] text-indigo-300">{[selected.category?.name, selected.subcategory?.name || selected.project?.name].filter(Boolean).join(' / ') || 'Uncategorized'}</p><h2 className="mt-2 break-words text-lg font-medium leading-7 text-zinc-100">{selected.title}</h2><div className="my-4 flex gap-2 text-[10px] text-zinc-400"><span className="rounded border border-white/10 px-2 py-1">{selected.status}</span><span className="rounded border border-white/10 px-2 py-1">{selected.priority}</span></div><p className="whitespace-pre-wrap break-words text-xs leading-6 text-zinc-400">{selected.description || 'No additional details yet.'}</p>{selected.due_date && <p className="mt-4 text-xs text-zinc-500">Due {formatShortDate(selected.due_date, selected.timezone)}</p>}{selected.external_url && <a href={selected.external_url} target="_blank" rel="noopener noreferrer" className="mt-5 flex items-center gap-2 text-xs text-indigo-300">Open reference <ArrowUpRight size={13} /></a>}<button onClick={() => setEditing(selected)} className="mt-6 w-full rounded-lg border border-white/10 py-2 text-xs text-zinc-200 hover:bg-white/5">Edit task</button></> : <><div className="flex items-center gap-2 text-xs font-medium text-zinc-200"><Network size={14} className="text-indigo-300" /> A little perspective</div><h2 className="mt-6 text-xl font-medium leading-8 tracking-tight text-zinc-200">See the whole picture.<br /><span className="text-zinc-500">Then take the next step.</span></h2><p className="mt-4 text-xs leading-6 text-zinc-500">Your tasks connect to the areas of your life. Select a circle to explore a project, then open a task for the details.</p><div className="mt-6 space-y-3 border-t border-white/[.07] pt-5">{groups.slice(0, 5).map((g, i) => <div key={g.id} className="flex items-center justify-between gap-3 text-xs"><span className="flex min-w-0 items-center gap-2 text-zinc-400"><span className={`h-1.5 w-1.5 shrink-0 rounded-full ${i % 2 ? 'bg-emerald-300' : 'bg-indigo-300'}`} /><span className="truncate">{g.name}</span></span><span className="text-zinc-500">{g.tasks.length}</span></div>)}</div><p className="mt-6 text-[10px] leading-5 text-zinc-600">{visible.length} tasks · {groups.length} life areas in this view</p></>}
+        {selected ? (
+          <>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-widest text-zinc-500">Task details</p>
+              <button aria-label="Close task details" onClick={() => setSelected(null)} className="text-zinc-500 hover:text-white cursor-pointer">
+                <X size={15} />
+              </button>
+            </div>
+            <p className="mt-4 text-[11px] text-indigo-300 font-medium">
+              {[selected.category?.name, selected.subcategory?.name || selected.project?.name].filter(Boolean).join(' / ') || 'Uncategorized'}
+            </p>
+            <h2 className="mt-1 break-words text-lg font-semibold leading-7 text-zinc-100">{selected.title}</h2>
+            <div className="my-3 flex gap-2 text-[10px] text-zinc-400">
+              <span className="rounded border border-white/10 px-2 py-0.5 bg-white/[.03]">{selected.status}</span>
+              <span className="rounded border border-white/10 px-2 py-0.5 bg-white/[.03]">{selected.priority}</span>
+            </div>
+            <p className="whitespace-pre-wrap break-words text-xs leading-6 text-zinc-400">
+              {selected.description || 'No additional details yet.'}
+            </p>
+            {selected.due_date && <p className="mt-4 text-xs text-zinc-400 font-medium">Due {formatShortDate(selected.due_date, selected.timezone)}</p>}
+            {selected.external_url && (
+              <a href={selected.external_url} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center gap-2 text-xs text-indigo-300 hover:underline">
+                Open reference <ArrowUpRight size={13} />
+              </a>
+            )}
+            <button onClick={() => setEditing(selected)} className="mt-5 w-full rounded-lg border border-white/10 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/5 transition cursor-pointer">
+              Edit task
+            </button>
+          </>
+        ) : selectedGroup ? (
+          <>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-widest text-zinc-500">Area Intelligence</p>
+              <button aria-label="Clear area selection" onClick={() => setSelectedGroup(null)} className="text-zinc-500 hover:text-white cursor-pointer">
+                <X size={15} />
+              </button>
+            </div>
+            <div className="mt-4 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.7)]" />
+              <h2 className="text-base font-semibold text-zinc-100 truncate">{selectedGroup.name}</h2>
+            </div>
+            <p className="mt-1 text-xs text-zinc-400">
+              {selectedGroup.tasks.length} active commitment{selectedGroup.tasks.length === 1 ? '' : 's'}
+              {selectedGroup.children.length > 0 && ` · ${selectedGroup.children.length} subcategories`}
+            </p>
+
+            <div className="my-4 space-y-2 border-t border-b border-white/[.07] py-3 text-xs">
+              <div className="flex justify-between text-zinc-400">
+                <span>Subcategories:</span>
+                <span className="text-zinc-200 font-medium">{selectedGroup.children.length}</span>
+              </div>
+              <div className="flex justify-between text-zinc-400">
+                <span>Active Tasks:</span>
+                <span className="text-zinc-200 font-medium">{selectedGroup.tasks.length}</span>
+              </div>
+            </div>
+
+            {selectedGroup.tasks.length > 0 && (
+              <div className="space-y-1.5 mb-4">
+                <p className="text-[10px] uppercase font-semibold text-zinc-500">Tasks in this area:</p>
+                {selectedGroup.tasks.slice(0, 3).map((t: Task) => (
+                  <button
+                    key={t.id}
+                    onClick={() => { setSelected(t); setEditing(t); }}
+                    className="w-full text-left p-2 rounded-lg bg-white/[.03] hover:bg-white/[.07] transition text-xs text-zinc-200 truncate flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                    <span className="truncate">{t.title}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-2 mt-4">
+              <Link
+                href={`/tasks?category_id=${selectedGroup.id}`}
+                className="w-full rounded-lg border border-white/10 py-2 px-3 text-xs text-zinc-200 hover:bg-white/5 flex items-center justify-center gap-1.5 transition text-center"
+              >
+                <span>View all in Registry</span>
+                <ArrowUpRight size={13} />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setSelectedGroup(null)}
+                className="w-full text-center text-xs text-zinc-500 hover:text-zinc-300 py-1 transition cursor-pointer"
+              >
+                Clear filter
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
+              <Network size={14} className="text-indigo-400" />
+              <span>Workspace Overview</span>
+            </div>
+            <h2 className="mt-4 text-lg font-semibold leading-7 tracking-tight text-zinc-100">
+              Connected Mind.<br />
+              <span className="text-zinc-500 font-normal">Holistic Perspective.</span>
+            </h2>
+            <p className="mt-2 text-xs leading-5 text-zinc-400">
+              Your tasks connect to the areas of your life. Select a circle in the map to explore commitments.
+            </p>
+            <div className="mt-5 space-y-2 border-t border-white/[.07] pt-4">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">Life Area Distribution</p>
+              {groups.slice(0, 6).map((g, i) => (
+                <div
+                  key={g.id}
+                  onClick={() => setSelectedGroup(g)}
+                  className="flex items-center justify-between gap-3 text-xs p-1.5 rounded-lg hover:bg-white/[.04] cursor-pointer transition"
+                >
+                  <span className="flex min-w-0 items-center gap-2 text-zinc-300">
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${i % 2 ? 'bg-emerald-400' : 'bg-indigo-400'}`} />
+                    <span className="truncate">{g.name}</span>
+                  </span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/[.05] text-zinc-300">
+                    {g.tasks.length}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-5 text-[10px] leading-5 text-zinc-500">
+              {visible.length} tasks · {groups.length} life areas mapped
+            </p>
+          </>
+        )}
       </aside>
     </div>}
     <section className="memory-panel overflow-hidden"><div className="flex items-center justify-between border-b border-white/[.07] px-5 py-4"><div className="flex items-center gap-2"><h2 className="text-sm font-medium text-zinc-200">{filter === 'Completed' ? 'Recently completed' : 'Your next steps'} {selectedGroup && <span className="text-xs font-normal text-indigo-300">• {selectedGroup.name}</span>} <span className="ml-1 text-xs font-normal text-zinc-600">({visible.length})</span></h2>{selectedGroup && <button type="button" onClick={() => setSelectedGroup(null)} className="text-[10px] text-zinc-400 hover:text-white underline ml-1">Clear filter</button>}</div><Link href="/tasks" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-200">All tasks <ArrowUpRight size={13} /></Link></div>{focus.slice(0, 6).map(task => <button key={task.id} onClick={() => { setSelected(task); setEditing(task); }} className="flex w-full items-center gap-3 border-b border-white/[.04] px-5 py-4 text-left last:border-0 hover:bg-white/[.025]">{task.status === 'DONE' ? <Check size={16} className="shrink-0 text-emerald-300" /> : <Circle size={15} className="shrink-0 text-zinc-600" />}<div className="min-w-0 flex-1"><p className="truncate text-sm text-zinc-300">{task.title}</p><p className="mt-1 truncate text-[10px] text-zinc-600">{task.project?.name || task.subcategory?.name || task.category?.name || 'Uncategorized'}</p></div><span className={`hidden text-[10px] sm:block ${task.priority === 'URGENT' || task.priority === 'HIGH' ? 'text-amber-300' : 'text-zinc-600'}`}>{task.priority.toLowerCase()}</span><ChevronRight size={14} className="text-zinc-600" /></button>)}{!loading && !visible.length && <p className="px-5 py-8 text-center text-xs text-zinc-500">{query ? 'No tasks match your search.' : filter === 'Active' ? 'Nothing to keep track of yet. Capture your first task above.' : 'No tasks in this view.'}</p>}</section>

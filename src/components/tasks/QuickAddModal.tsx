@@ -12,6 +12,8 @@ interface QuickAddModalProps {
   defaultStatus?: string;
   defaultProjectId?: string;
   defaultCategoryId?: string;
+  defaultDueDate?: string;
+  defaultSubcategoryId?: string;
 }
 
 export function QuickAddModal({
@@ -21,23 +23,25 @@ export function QuickAddModal({
   defaultStatus = 'INBOX',
   defaultProjectId,
   defaultCategoryId,
+  defaultSubcategoryId,
+  defaultDueDate,
 }: QuickAddModalProps) {
   const [rawText, setRawText] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState(defaultStatus);
   const [priority, setPriority] = useState('MEDIUM');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState(defaultDueDate || '');
   const [reminderTime, setReminderTime] = useState('');
   const [projectId, setProjectId] = useState(defaultProjectId || '');
   const [categoryId, setCategoryId] = useState(defaultCategoryId || '');
-  const [subcategoryId, setSubcategoryId] = useState('');
+  const [subcategoryId, setSubcategoryId] = useState(defaultSubcategoryId || '');
   const [merchant, setMerchant] = useState('');
   const [amount, setAmount] = useState('');
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(Boolean(defaultDueDate || defaultCategoryId || defaultProjectId));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,8 +61,12 @@ export function QuickAddModal({
   useEffect(() => {
     if (isOpen) {
       fetchCategoriesAndProjects();
+      if (defaultDueDate) {
+        setDueDate(defaultDueDate);
+        setShowAdvanced(true);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, defaultDueDate]);
 
   // Live NLP preview
   const parsedPreview = rawText.trim() ? parseNaturalLanguageTask(rawText) : null;

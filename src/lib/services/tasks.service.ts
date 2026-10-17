@@ -102,6 +102,9 @@ export async function getTasks(
   if (filter.category_id) {
     query = query.or(`category_id.eq.${filter.category_id},subcategory_id.eq.${filter.category_id}`);
   }
+  if (filter.subcategory_id) {
+    query = query.eq('subcategory_id', filter.subcategory_id);
+  }
   if (filter.project_id) {
     query = query.eq('project_id', filter.project_id);
   }

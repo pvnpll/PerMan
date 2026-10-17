@@ -30,5 +30,5 @@ export function buildMemoryGroups(categories: Category[], tasks: Task[]): Memory
     }
     child?.tasks.push(task);
   }
-  return roots.filter(r => r.tasks.length > 0);
+  return roots.filter((r) => r.tasks.length > 0);
 }

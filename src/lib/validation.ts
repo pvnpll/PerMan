@@ -92,6 +92,7 @@ export const SearchTasksSchema = z.object({
   status: TaskStatusSchema.optional(),
   priority: TaskPrioritySchema.optional(),
   category_id: z.string().uuid().optional(),
+  subcategory_id: z.string().uuid().optional(),
   project_id: z.string().uuid().optional(),
   due_date: z.string().optional(), // 'today', 'overdue', 'upcoming', or YYYY-MM-DD
   archived: z.boolean().optional().default(false),

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Task, Category, Project } from '@/lib/types';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';
+import { QuickAddModal } from '@/components/tasks/QuickAddModal';
 import {
   CheckSquare,
   Search,
@@ -13,6 +14,8 @@ import {
   Archive,
   Loader2,
   X,
+  Plus,
+  Folder,
 } from 'lucide-react';
 
 function TasksContent() {
@@ -36,15 +39,38 @@ function TasksContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   useEffect(() => {
     const catParam = searchParams.get('category_id');
+    const subParam = searchParams.get('subcategory_id');
     const projParam = searchParams.get('project_id');
     const statusParam = searchParams.get('status');
-    if (catParam !== null) setCategoryId(catParam);
+
     if (projParam !== null) setProjectId(projParam);
     if (statusParam !== null) setStatus(statusParam);
-  }, [searchParams]);
+
+    if (catParam) {
+      const parent = categories.find((c) => c.id === catParam);
+      if (parent) {
+        setCategoryId(parent.id);
+        if (subParam) setSubcategoryId(subParam);
+      } else {
+        const foundParent = categories.find((c) =>
+          c.subcategories?.some((s) => s.id === catParam)
+        );
+        if (foundParent) {
+          setCategoryId(foundParent.id);
+          setSubcategoryId(catParam);
+        } else {
+          setCategoryId(catParam);
+          if (subParam) setSubcategoryId(subParam);
+        }
+      }
+    } else if (subParam) {
+      setSubcategoryId(subParam);
+    }
+  }, [searchParams, categories]);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -53,9 +79,8 @@ function TasksContent() {
       if (query.trim()) params.set('query', query.trim());
       if (status) params.set('status', status);
       if (priority) params.set('priority', priority);
-      // Prefer subcategoryId if chosen, else categoryId
-      const activeCat = subcategoryId || categoryId;
-      if (activeCat) params.set('category_id', activeCat);
+      if (categoryId) params.set('category_id', categoryId);
+      if (subcategoryId) params.set('subcategory_id', subcategoryId);
       if (projectId) params.set('project_id', projectId);
       params.set('sort_by', sortBy);
       params.set('sort_direction', sortDir);
@@ -103,6 +128,7 @@ function TasksContent() {
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
   const availableSubcategories = selectedCategory?.subcategories || [];
+  const selectedSubcategory = availableSubcategories.find((s) => s.id === subcategoryId);
 
   const hasActiveFilters = query || status || priority || categoryId || subcategoryId || projectId || showArchived;
 
@@ -261,8 +287,41 @@ function TasksContent() {
             <span className="text-xs">Loading tasks...</span>
           </div>
         ) : tasks.length === 0 ? (
-          <div className="bg-white/[.02] border border-white/[.07] rounded-xl p-12 text-center text-zinc-500 text-xs">
-            No tasks match the selected criteria.
+          <div className="bg-[#111318] border border-white/[.07] rounded-xl p-10 text-center text-zinc-400 text-xs space-y-4">
+            <div className="w-10 h-10 rounded-full bg-white/[.04] border border-white/[.07] flex items-center justify-center mx-auto text-zinc-400">
+              <Folder className="w-5 h-5 text-zinc-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-zinc-100 text-sm">
+                No tasks found
+                {selectedCategory ? ` in ${selectedCategory.name}` : ''}
+                {selectedSubcategory ? ` / ${selectedSubcategory.name}` : ''}
+              </p>
+              <p className="text-zinc-500 text-xs mt-1 max-w-sm mx-auto">
+                {hasActiveFilters
+                  ? 'No tasks match your current filter selection. You can clear your filters or quickly add a new task here.'
+                  : 'Your registry is clear. Get started by capturing your first task.'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setQuickAddOpen(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-zinc-200 hover:bg-white text-zinc-900 text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Task{selectedCategory ? ` in ${selectedCategory.name}` : ''}</span>
+              </button>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="px-3.5 py-1.5 rounded-lg border border-white/[.08] text-zinc-300 hover:text-white hover:bg-white/[.05] text-xs transition cursor-pointer"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-2">
@@ -283,6 +342,15 @@ function TasksContent() {
         isOpen={!!editingTask}
         onClose={() => setEditingTask(null)}
         onTaskUpdated={fetchTasks}
+      />
+
+      <QuickAddModal
+        isOpen={quickAddOpen}
+        onClose={() => setQuickAddOpen(false)}
+        onTaskCreated={fetchTasks}
+        defaultCategoryId={categoryId}
+        defaultSubcategoryId={subcategoryId}
+        defaultProjectId={projectId}
       />
     </div>
   );

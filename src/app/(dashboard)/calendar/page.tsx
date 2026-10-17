@@ -258,12 +258,16 @@ function CalendarContent() {
                     )}
                   </div>
 
-                  <div className="space-y-0.5 mt-1 overflow-hidden">
+                  <div className="space-y-0.5 mt-1 overflow-hidden w-full">
                     {dayTasks.slice(0, 2).map((t) => (
                       <div
                         key={t.id}
-                        className="text-[9px] truncate px-1 py-0.5 rounded bg-white/[.04] text-zinc-300"
-                        title={t.title}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTask(t);
+                        }}
+                        className="text-[9px] truncate px-1.5 py-0.5 rounded bg-white/[.04] text-zinc-300 hover:text-white hover:bg-white/[.12] transition cursor-pointer"
+                        title={`Click to edit: ${t.title}`}
                       >
                         {t.title}
                       </div>
@@ -354,7 +358,13 @@ function CalendarContent() {
               {remindersForSelectedDate.map((r) => (
                 <div
                   key={r.id}
-                  className="bg-[#0c0e12] border border-white/[.07] rounded-xl p-3 flex items-center justify-between"
+                  onClick={() => {
+                    if (r.task) setEditingTask(r.task as any);
+                  }}
+                  className={`bg-[#0c0e12] border border-white/[.07] rounded-xl p-3 flex items-center justify-between transition ${
+                    r.task ? 'cursor-pointer hover:border-white/20 hover:bg-white/[.03]' : ''
+                  }`}
+                  title={r.task ? `Click to view task: ${r.task.title}` : undefined}
                 >
                   <div className="truncate pr-2">
                     <div className="text-xs font-semibold text-zinc-200 truncate">
@@ -416,6 +426,7 @@ function CalendarContent() {
         isOpen={quickAddOpen}
         onClose={() => setQuickAddOpen(false)}
         onTaskCreated={fetchData}
+        defaultDueDate={format(selectedDate, "yyyy-MM-dd'T'09:00")}
       />
     </div>
   );

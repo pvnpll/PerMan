@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Category } from '@/lib/types';
-import { Tags, Plus, ChevronRight, ChevronDown, Trash2, Edit2, Loader2, Sparkles, ExternalLink } from 'lucide-react';
+import { Tags, Plus, ChevronRight, ChevronDown, Trash2, Edit2, Loader2, Sparkles, ExternalLink, ArrowRight } from 'lucide-react';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -121,22 +121,25 @@ export default function CategoriesPage() {
               >
                 {/* Header */}
                 <div className="flex items-center justify-between gap-2">
-                  <div
-                    className="flex items-center space-x-2.5 cursor-pointer min-w-0 flex-1"
-                    onClick={() => toggleExpand(cat.id)}
+                  <Link
+                    href={`/tasks?category_id=${cat.id}`}
+                    className="flex items-center space-x-2.5 cursor-pointer min-w-0 flex-1 group"
+                    title="View tasks in this category"
                   >
                     <div
-                      className="w-3 h-3 rounded-full shrink-0"
+                      className="w-3 h-3 rounded-full shrink-0 group-hover:scale-110 transition"
                       style={{ backgroundColor: cat.color || '#3B82F6' }}
                     />
-                    <h3 className="text-sm font-medium text-zinc-100 tracking-tight truncate">{cat.name}</h3>
+                    <h3 className="text-sm font-medium text-zinc-100 tracking-tight truncate group-hover:text-white group-hover:underline">
+                      {cat.name}
+                    </h3>
                     <span className="hidden sm:inline-block text-[10px] text-zinc-500 font-medium px-2 py-0.5 bg-[#0c0e12] rounded-full border border-white/[.07] shrink-0">
                       {subCount} subcategories
                     </span>
                     <span className="sm:hidden text-[10px] text-zinc-500 font-medium px-1.5 py-0.5 bg-[#0c0e12] rounded-full border border-white/[.07] shrink-0">
                       {subCount}
                     </span>
-                  </div>
+                  </Link>
 
                   <div className="flex items-center space-x-1 shrink-0">
                     <Link
@@ -163,22 +166,45 @@ export default function CategoriesPage() {
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => toggleExpand(cat.id)}
-                      className="p-1 text-zinc-400 hover:text-zinc-100"
-                    >
-                      {isExp ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
+                    {subCount > 0 && (
+                      <button
+                        onClick={() => toggleExpand(cat.id)}
+                        title={isExp ? 'Collapse subcategories' : 'Expand subcategories'}
+                        className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-white/[.06] rounded-lg transition"
+                      >
+                        {isExp ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    )}
                   </div>
+                </div>
+
+                {/* Card Action Link */}
+                <div className="mt-3 pt-2.5 border-t border-white/[.05] flex items-center justify-between text-[11px] text-zinc-400">
+                  <Link
+                    href={`/tasks?category_id=${cat.id}`}
+                    className="hover:text-zinc-200 hover:underline flex items-center space-x-1 text-zinc-400 hover:text-white transition"
+                  >
+                    <span>View tasks in {cat.name}</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                  {subCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(cat.id)}
+                      className="text-zinc-500 hover:text-zinc-300 transition text-[10px]"
+                    >
+                      {isExp ? 'Hide subcategories' : `Show ${subCount} subcategories`}
+                    </button>
+                  )}
                 </div>
 
                 {/* Subcategories */}
                 {isExp && subCount > 0 && (
-                  <div className="mt-3 pt-3 border-t border-white/[.07] space-y-1.5">
+                  <div className="mt-2.5 pt-2.5 border-t border-white/[.07] space-y-1.5">
                     {cat.subcategories?.map((sub) => (
                       <Link
                         key={sub.id}
-                        href={`/tasks?category_id=${sub.id}`}
+                        href={`/tasks?category_id=${cat.id}&subcategory_id=${sub.id}`}
                         className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/[.02] hover:bg-white/[.06] text-zinc-300 hover:text-white transition group cursor-pointer"
                       >
                         <div className="flex items-center space-x-2">

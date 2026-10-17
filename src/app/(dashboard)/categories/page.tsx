@@ -119,22 +119,25 @@ export default function CategoriesPage() {
                 className="bg-[#111318] border border-white/[.07] rounded-xl p-4 shadow-none"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <div
-                    className="flex items-center space-x-2.5 cursor-pointer flex-1"
+                    className="flex items-center space-x-2.5 cursor-pointer min-w-0 flex-1"
                     onClick={() => toggleExpand(cat.id)}
                   >
                     <div
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: cat.color || '#3B82F6' }}
                     />
-                    <h3 className="text-sm font-medium text-zinc-100 tracking-tight">{cat.name}</h3>
-                    <span className="text-[10px] text-zinc-500 font-medium px-2 py-0.5 bg-[#0c0e12] rounded-full border border-white/[.07]">
+                    <h3 className="text-sm font-medium text-zinc-100 tracking-tight truncate">{cat.name}</h3>
+                    <span className="hidden sm:inline-block text-[10px] text-zinc-500 font-medium px-2 py-0.5 bg-[#0c0e12] rounded-full border border-white/[.07] shrink-0">
                       {subCount} subcategories
+                    </span>
+                    <span className="sm:hidden text-[10px] text-zinc-500 font-medium px-1.5 py-0.5 bg-[#0c0e12] rounded-full border border-white/[.07] shrink-0">
+                      {subCount}
                     </span>
                   </div>
 
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1 shrink-0">
                     <button
                       onClick={() => {
                         setParentId(cat.id);

@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Inbox,
   CheckSquare,
-  FolderKanban,
   Settings,
   Plus,
 } from 'lucide-react';
@@ -18,58 +17,65 @@ interface BottomNavProps {
 export function BottomNav({ onOpenQuickAdd }: BottomNavProps) {
   const pathname = usePathname();
 
-  const links = [
-    { label: 'Memory', href: '/', icon: LayoutDashboard },
-    { label: 'Inbox', href: '/inbox', icon: Inbox },
-    { label: 'Tasks', href: '/tasks', icon: CheckSquare },
-    { label: 'Projects', href: '/projects', icon: FolderKanban },
-    { label: 'Settings', href: '/settings', icon: Settings },
-  ];
-
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#101216]/95 backdrop-blur-md border-t border-white/[.07] z-40 px-2 py-1 flex items-center justify-around">
-      {links.slice(0, 2).map((link) => {
-        const Icon = link.icon;
-        const isActive = pathname === link.href;
-        return (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`flex flex-col items-center py-1.5 px-3 rounded-lg text-xs font-medium transition ${
-              isActive ? 'text-zinc-300' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Icon className="w-5 h-5 mb-1" />
-            <span>{link.label}</span>
-          </Link>
-        );
-      })}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#101216]/95 backdrop-blur-md border-t border-white/[.07] z-40 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="grid grid-cols-5 items-center w-full max-w-lg mx-auto">
+        {/* Tab 1: Memory Overview */}
+        <Link
+          href="/"
+          className={`flex flex-col items-center justify-center py-1 rounded-lg text-[10px] font-medium transition ${
+            pathname === '/' ? 'text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-200'
+          }`}
+        >
+          <LayoutDashboard className={`w-5 h-5 mb-1 ${pathname === '/' ? 'text-zinc-200' : 'text-zinc-500'}`} />
+          <span className="truncate">Memory</span>
+        </Link>
 
-      {/* Center Floating Quick Add */}
-      <button
-        type="button"
-        onClick={onOpenQuickAdd}
-        className="w-12 h-12 -mt-5 rounded-full bg-zinc-200 hover:bg-white text-zinc-900 flex items-center justify-center shadow-none  border-2 border-[#0c0e12] transition active:scale-95"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+        {/* Tab 2: Inbox */}
+        <Link
+          href="/inbox"
+          className={`flex flex-col items-center justify-center py-1 rounded-lg text-[10px] font-medium transition ${
+            pathname === '/inbox' ? 'text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-200'
+          }`}
+        >
+          <Inbox className={`w-5 h-5 mb-1 ${pathname === '/inbox' ? 'text-zinc-200' : 'text-zinc-500'}`} />
+          <span className="truncate">Inbox</span>
+        </Link>
 
-      {links.slice(2).map((link) => {
-        const Icon = link.icon;
-        const isActive = pathname === link.href;
-        return (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`flex flex-col items-center py-1.5 px-3 rounded-lg text-xs font-medium transition ${
-              isActive ? 'text-zinc-300' : 'text-zinc-400 hover:text-zinc-200'
-            }`}
+        {/* Center Floating Quick Add (Exactly Column 3) */}
+        <div className="flex items-center justify-center">
+          <button
+            type="button"
+            onClick={onOpenQuickAdd}
+            aria-label="Capture task"
+            className="w-11 h-11 -mt-5 rounded-full bg-zinc-200 hover:bg-white text-zinc-900 flex items-center justify-center shadow-lg shadow-black/40 border-2 border-[#0c0e12] transition active:scale-95 cursor-pointer"
           >
-            <Icon className="w-5 h-5 mb-1" />
-            <span>{link.label}</span>
-          </Link>
-        );
-      })}
-    </div>
+            <Plus className="w-5 h-5" strokeWidth={2.5} />
+          </button>
+        </div>
+
+        {/* Tab 3: Tasks */}
+        <Link
+          href="/tasks"
+          className={`flex flex-col items-center justify-center py-1 rounded-lg text-[10px] font-medium transition ${
+            pathname === '/tasks' ? 'text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-200'
+          }`}
+        >
+          <CheckSquare className={`w-5 h-5 mb-1 ${pathname === '/tasks' ? 'text-zinc-200' : 'text-zinc-500'}`} />
+          <span className="truncate">Tasks</span>
+        </Link>
+
+        {/* Tab 4: Settings */}
+        <Link
+          href="/settings"
+          className={`flex flex-col items-center justify-center py-1 rounded-lg text-[10px] font-medium transition ${
+            pathname === '/settings' ? 'text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-200'
+          }`}
+        >
+          <Settings className={`w-5 h-5 mb-1 ${pathname === '/settings' ? 'text-zinc-200' : 'text-zinc-500'}`} />
+          <span className="truncate">Settings</span>
+        </Link>
+      </div>
+    </nav>
   );
 }

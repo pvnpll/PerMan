@@ -113,19 +113,19 @@ export default function ProjectsPage() {
                 className="bg-[#111318] border border-white/[.07] rounded-xl p-5 shadow-none flex flex-col justify-between hover:border-white/10 transition"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2.5">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center space-x-2.5 min-w-0 flex-1">
                       <div
                         className="w-3.5 h-3.5 rounded-md shrink-0"
                         style={{ backgroundColor: proj.color || '#3B82F6' }}
                       />
-                      <h3 className="text-sm font-medium text-zinc-100 tracking-tight">{proj.name}</h3>
+                      <h3 className="text-sm font-medium text-zinc-100 tracking-tight truncate">{proj.name}</h3>
                     </div>
 
                     <button
                       onClick={() => handleDelete(proj.id, proj.name)}
                       title="Delete project"
-                      className="p-1 text-zinc-500 hover:text-zinc-400 hover:bg-white/[.06] rounded-lg transition"
+                      className="p-1 text-zinc-500 hover:text-zinc-400 hover:bg-white/[.06] rounded-lg transition shrink-0"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

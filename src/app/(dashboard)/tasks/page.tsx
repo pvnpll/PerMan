@@ -174,7 +174,7 @@ export default function AllTasksPage() {
               setSortBy(col);
               setSortDir(dir);
             }}
-            className="bg-[#0c0e12] border border-white/[.07] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-white/25"
+            className="col-span-2 md:col-span-1 bg-[#0c0e12] border border-white/[.07] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-white/25"
           >
             <option value="created_at-desc">Newest First</option>
             <option value="due_date-asc">Due Date (Earliest)</option>

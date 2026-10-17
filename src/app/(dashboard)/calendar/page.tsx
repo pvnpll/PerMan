@@ -95,7 +95,7 @@ function CalendarContent() {
       </div>
 
       {/* Week Day Pills */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {next7Days.map((day, idx) => {
           const isSelected = selectedDayOffset === idx;
           const dayTasks = tasks.filter((t) => t.due_date && isSameDay(parseISO(t.due_date), day));
@@ -104,17 +104,17 @@ function CalendarContent() {
             <button
               key={day.toISOString()}
               onClick={() => setSelectedDayOffset(idx)}
-              className={`p-3 rounded-xl border text-center transition flex flex-col items-center cursor-pointer ${
+              className={`p-1.5 sm:p-3 rounded-xl border text-center transition flex flex-col items-center cursor-pointer ${
                 isSelected
                   ? 'border-white/[.07] bg-white/[.04] border-white/10 shadow-none '
                   : 'bg-[#111318] border-white/[.07] hover:border-white/10'
               }`}
             >
-              <span className="text-[10px] font-semibold text-zinc-400 uppercase">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-400 uppercase truncate">
                 {idx === 0 ? 'Today' : format(day, 'EEE')}
               </span>
               <span
-                className={`text-sm font-medium my-1 ${
+                className={`text-xs sm:text-sm font-medium my-1 ${
                   isSelected ? 'text-zinc-300' : 'text-zinc-100'
                 }`}
               >
@@ -129,8 +129,8 @@ function CalendarContent() {
       </div>
 
       {/* Selected Day View */}
-      <div className="bg-[#111318] border border-white/[.07] rounded-xl p-6 shadow-none space-y-6">
-        <div className="border-b border-white/[.07] pb-3 flex items-center justify-between">
+      <div className="bg-[#111318] border border-white/[.07] rounded-xl p-4 sm:p-6 shadow-none space-y-6">
+        <div className="border-b border-white/[.07] pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
           <div className="font-bold text-base text-zinc-100">
             {format(activeDate, 'EEEE, MMMM d, yyyy')}
           </div>

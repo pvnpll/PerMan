@@ -31,6 +31,7 @@ export function QuickAddModal({
   const [reminderTime, setReminderTime] = useState('');
   const [projectId, setProjectId] = useState(defaultProjectId || '');
   const [categoryId, setCategoryId] = useState(defaultCategoryId || '');
+  const [subcategoryId, setSubcategoryId] = useState('');
   const [merchant, setMerchant] = useState('');
   const [amount, setAmount] = useState('');
 
@@ -72,12 +73,28 @@ export function QuickAddModal({
     if (parsed.merchant) setMerchant(parsed.merchant);
     if (parsed.estimatedAmount) setAmount(parsed.estimatedAmount.toString());
 
-    // Match category
+    // Match category or subcategory
     if (parsed.categoryName && categories.length > 0) {
-      const matchedCat = categories.find((c) =>
-        c.name.toLowerCase().includes(parsed.categoryName!.toLowerCase())
-      );
-      if (matchedCat) setCategoryId(matchedCat.id);
+      const term = parsed.categoryName.toLowerCase();
+      let matched = false;
+      for (const c of categories) {
+        const sub = c.subcategories?.find((s) => s.name.toLowerCase().includes(term));
+        if (sub) {
+          setCategoryId(c.id);
+          setSubcategoryId(sub.id);
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        const matchedCat = categories.find((c) =>
+          c.name.toLowerCase().includes(term)
+        );
+        if (matchedCat) {
+          setCategoryId(matchedCat.id);
+          setSubcategoryId('');
+        }
+      }
     }
 
     // Match project
@@ -107,6 +124,7 @@ export function QuickAddModal({
         reminder_time: reminderTime ? new Date(reminderTime).toISOString() : null,
         project_id: projectId || null,
         category_id: categoryId || null,
+        subcategory_id: subcategoryId || null,
         merchant: merchant || null,
         estimated_amount: amount ? parseFloat(amount) : null,
         source: 'APP',
@@ -131,6 +149,7 @@ export function QuickAddModal({
       setReminderTime('');
       setMerchant('');
       setAmount('');
+      setSubcategoryId('');
       onTaskCreated();
       onClose();
     } catch (err: any) {
@@ -287,43 +306,72 @@ export function QuickAddModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-                    Project
-                  </label>
-                  <select
-                    value={projectId}
-                    onChange={(e) => setProjectId(e.target.value)}
-                    className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
-                  >
-                    <option value="">No Project</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {(() => {
+                const selectedCat = categories.find((c) => c.id === categoryId);
+                const subcats = selectedCat?.subcategories || [];
+                return (
+                  <div className={`grid ${subcats.length > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                        Project
+                      </label>
+                      <select
+                        value={projectId}
+                        onChange={(e) => setProjectId(e.target.value)}
+                        className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
+                      >
+                        <option value="">No Project</option>
+                        {projects.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
-                  >
-                    <option value="">No Category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={categoryId}
+                        onChange={(e) => {
+                          setCategoryId(e.target.value);
+                          setSubcategoryId('');
+                        }}
+                        className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
+                      >
+                        <option value="">No Category</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {subcats.length > 0 && (
+                      <div>
+                        <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                          Subcategory
+                        </label>
+                        <select
+                          value={subcategoryId}
+                          onChange={(e) => setSubcategoryId(e.target.value)}
+                          className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
+                        >
+                          <option value="">No Subcategory</option>
+                          {subcats.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">

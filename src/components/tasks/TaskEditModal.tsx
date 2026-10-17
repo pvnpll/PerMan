@@ -20,6 +20,7 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
   const [reminderTime, setReminderTime] = useState('');
   const [projectId, setProjectId] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [subcategoryId, setSubcategoryId] = useState('');
   const [merchant, setMerchant] = useState('');
   const [amount, setAmount] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -36,11 +37,31 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
       setDueDate(task.due_date ? task.due_date.slice(0, 16) : '');
       setReminderTime(task.reminder_time ? task.reminder_time.slice(0, 16) : '');
       setProjectId(task.project_id || '');
-      setCategoryId(task.category_id || '');
       setMerchant(task.merchant || '');
       setAmount(task.estimated_amount !== null && task.estimated_amount !== undefined ? task.estimated_amount.toString() : '');
+
+      // Resolve category and subcategory
+      const directCatId = task.category_id || '';
+      const directSubId = task.subcategory_id || '';
+      if (directSubId) {
+        setCategoryId(directCatId);
+        setSubcategoryId(directSubId);
+      } else if (directCatId) {
+        // Check if directCatId is actually a subcategory
+        const parentCat = categories.find((c) => c.subcategories?.some((s) => s.id === directCatId));
+        if (parentCat) {
+          setCategoryId(parentCat.id);
+          setSubcategoryId(directCatId);
+        } else {
+          setCategoryId(directCatId);
+          setSubcategoryId('');
+        }
+      } else {
+        setCategoryId('');
+        setSubcategoryId('');
+      }
     }
-  }, [task]);
+  }, [task, categories]);
 
   useEffect(() => {
     if (isOpen) {
@@ -66,6 +87,7 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
         reminder_time: reminderTime ? new Date(reminderTime).toISOString() : null,
         project_id: projectId || null,
         category_id: categoryId || null,
+        subcategory_id: subcategoryId || null,
         merchant: merchant || null,
         estimated_amount: amount ? parseFloat(amount) : null,
       };
@@ -89,6 +111,9 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
       setLoading(false);
     }
   };
+
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const availableSubcategories = selectedCategory?.subcategories || [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
@@ -185,7 +210,7 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid ${availableSubcategories.length > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                 Project
@@ -210,7 +235,10 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
               </label>
               <select
                 value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                  setSubcategoryId('');
+                }}
                 className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
               >
                 <option value="">No Category</option>
@@ -221,6 +249,26 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
                 ))}
               </select>
             </div>
+
+            {availableSubcategories.length > 0 && (
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                  Subcategory
+                </label>
+                <select
+                  value={subcategoryId}
+                  onChange={(e) => setSubcategoryId(e.target.value)}
+                  className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
+                >
+                  <option value="">No Subcategory</option>
+                  {availableSubcategories.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div>

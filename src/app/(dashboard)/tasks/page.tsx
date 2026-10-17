@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Task, Category, Project } from '@/lib/types';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';
@@ -14,14 +15,20 @@ import {
   X,
 } from 'lucide-react';
 
-export default function AllTasksPage() {
+function TasksContent() {
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get('category_id') || '';
+  const initialProject = searchParams.get('project_id') || '';
+  const initialStatus = searchParams.get('status') || '';
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(initialStatus);
   const [priority, setPriority] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const [categoryId, setCategoryId] = useState(initialCategory);
+  const [subcategoryId, setSubcategoryId] = useState('');
+  const [projectId, setProjectId] = useState(initialProject);
   const [sortBy, setSortBy] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
   const [showArchived, setShowArchived] = useState(false);
@@ -30,6 +37,15 @@ export default function AllTasksPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
+  useEffect(() => {
+    const catParam = searchParams.get('category_id');
+    const projParam = searchParams.get('project_id');
+    const statusParam = searchParams.get('status');
+    if (catParam !== null) setCategoryId(catParam);
+    if (projParam !== null) setProjectId(projParam);
+    if (statusParam !== null) setStatus(statusParam);
+  }, [searchParams]);
+
   const fetchTasks = async () => {
     setLoading(true);
     try {
@@ -37,7 +53,9 @@ export default function AllTasksPage() {
       if (query.trim()) params.set('query', query.trim());
       if (status) params.set('status', status);
       if (priority) params.set('priority', priority);
-      if (categoryId) params.set('category_id', categoryId);
+      // Prefer subcategoryId if chosen, else categoryId
+      const activeCat = subcategoryId || categoryId;
+      if (activeCat) params.set('category_id', activeCat);
       if (projectId) params.set('project_id', projectId);
       params.set('sort_by', sortBy);
       params.set('sort_direction', sortDir);
@@ -65,7 +83,7 @@ export default function AllTasksPage() {
       fetchTasks();
     }, 200);
     return () => clearTimeout(timer);
-  }, [query, status, priority, categoryId, projectId, sortBy, sortDir, showArchived]);
+  }, [query, status, priority, categoryId, subcategoryId, projectId, sortBy, sortDir, showArchived]);
 
   useEffect(() => {
     const handleCreated = () => fetchTasks();
@@ -78,11 +96,15 @@ export default function AllTasksPage() {
     setStatus('');
     setPriority('');
     setCategoryId('');
+    setSubcategoryId('');
     setProjectId('');
     setShowArchived(false);
   };
 
-  const hasActiveFilters = query || status || priority || categoryId || projectId || showArchived;
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const availableSubcategories = selectedCategory?.subcategories || [];
+
+  const hasActiveFilters = query || status || priority || categoryId || subcategoryId || projectId || showArchived;
 
   return (
     <div className="memory-home space-y-6">
@@ -109,7 +131,7 @@ export default function AllTasksPage() {
         </div>
 
         {/* Filters Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className={`grid grid-cols-2 ${availableSubcategories.length > 0 ? 'md:grid-cols-6' : 'md:grid-cols-5'} gap-2`}>
           {/* Status */}
           <select
             value={status}
@@ -141,7 +163,10 @@ export default function AllTasksPage() {
           {/* Category */}
           <select
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => {
+              setCategoryId(e.target.value);
+              setSubcategoryId('');
+            }}
             className="bg-[#0c0e12] border border-white/[.07] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-white/25"
           >
             <option value="">All Categories</option>
@@ -151,6 +176,22 @@ export default function AllTasksPage() {
               </option>
             ))}
           </select>
+
+          {/* Subcategory */}
+          {availableSubcategories.length > 0 && (
+            <select
+              value={subcategoryId}
+              onChange={(e) => setSubcategoryId(e.target.value)}
+              className="bg-[#0c0e12] border border-white/[.07] rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-white/25"
+            >
+              <option value="">All Subcategories</option>
+              {availableSubcategories.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Project */}
           <select
@@ -244,5 +285,18 @@ export default function AllTasksPage() {
         onTaskUpdated={fetchTasks}
       />
     </div>
+  );
+}
+
+export default function AllTasksPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-12 text-center text-zinc-500">
+        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+        <span className="text-xs">Loading task registry...</span>
+      </div>
+    }>
+      <TasksContent />
+    </Suspense>
   );
 }

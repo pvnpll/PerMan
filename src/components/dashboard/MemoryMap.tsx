@@ -7,7 +7,15 @@ import type { MemoryGroup } from '@/lib/memory-map';
 
 const colors = ['#a5b4fc', '#6ee7b7', '#fcd34d', '#7dd3fc', '#f9a8d4', '#c4b5fd'];
 
-export function MemoryMap({ groups, onSelectTask }: { groups: MemoryGroup[]; onSelectTask: (task: Task) => void }) {
+export function MemoryMap({
+  groups,
+  onSelectTask,
+  onSelectGroup,
+}: {
+  groups: MemoryGroup[];
+  onSelectTask: (task: Task) => void;
+  onSelectGroup?: (group: MemoryGroup | null) => void;
+}) {
   const [path, setPath] = useState<string[]>([]);
   const [zoom, setZoom] = useState(1);
   const [page, setPage] = useState(0);
@@ -34,6 +42,11 @@ export function MemoryMap({ groups, onSelectTask }: { groups: MemoryGroup[]; onS
   }
   const currentPathValid = path.length === 0 || !!current;
   const group = currentPathValid ? current : undefined;
+
+  useEffect(() => {
+    onSelectGroup?.(group || null);
+  }, [group, onSelectGroup]);
+
   const childTaskIds = new Set(group?.children.flatMap(c => c.tasks.map(t => t.id)));
   const nodes = group ? [
     ...group.children.filter(c => c.tasks.length).map(c => ({ id: c.id, name: c.name, count: c.tasks.length, group: c, task: undefined as Task | undefined })),

@@ -46,3 +46,4 @@ rl.on('line', async (line) => {
     process.stdout.write(JSON.stringify(errObj) + '\n');
   }
 });
+

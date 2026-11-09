@@ -14,6 +14,7 @@ interface TaskEditModalProps {
 export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEditModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [frequency, setFrequency] = useState('NONE');
   const [status, setStatus] = useState<any>('INBOX');
   const [priority, setPriority] = useState<any>('MEDIUM');
   const [dueDate, setDueDate] = useState('');
@@ -32,10 +33,12 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
     if (task) {
       setTitle(task.title);
       setDescription(task.description || '');
+      setFrequency(task.recurrence_rule?.frequency || 'NONE');
       setStatus(task.status);
       setPriority(task.priority);
-      setDueDate(task.due_date ? task.due_date.slice(0, 16) : '');
-      setReminderTime(task.reminder_time ? task.reminder_time.slice(0, 16) : '');
+      const localInput = (iso: string | null) => { if (!iso) return ''; const date = new Date(iso); return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+      setDueDate(localInput(task.due_date));
+      setReminderTime(localInput(task.reminder_time));
       setProjectId(task.project_id || '');
       setMerchant(task.merchant || '');
       setAmount(task.estimated_amount !== null && task.estimated_amount !== undefined ? task.estimated_amount.toString() : '');
@@ -78,7 +81,9 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
     setError(null);
 
     try {
+      if (frequency !== 'NONE' && !dueDate) throw new Error('Choose a due date for the repeating task.');
       const payload: any = {
+        recurrence_rule: frequency === 'NONE' ? null : { ...task.recurrence_rule, frequency, interval: task.recurrence_rule?.interval || 1 },
         title,
         description: description || null,
         status,
@@ -117,7 +122,7 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
-      <div className="bg-[#111318] border border-white/[.07] rounded-xl w-full max-w-lg shadow-none overflow-hidden">
+      <div className="bg-[#111318] border border-white/[.07] rounded-xl w-full max-w-lg shadow-none overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between p-4 border-b border-white/[.07]">
           <span className="font-semibold text-zinc-100 text-base">Edit Task</span>
           <button
@@ -283,6 +288,8 @@ export function TaskEditModal({ task, isOpen, onClose, onTaskUpdated }: TaskEdit
             />
           </div>
 
+          {description.split('\n').some(line => /^[☐☑] /.test(line)) && <fieldset className="space-y-2"><legend className="mb-2 text-xs text-zinc-400">Routine checklist</legend>{description.split('\n').map((line, index) => /^[☐☑] /.test(line) ? <label key={index} className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" checked={line.startsWith('☑')} onChange={e => setDescription(description.split('\n').map((value, i) => i === index ? `${e.target.checked ? '☑' : '☐'} ${value.slice(2)}` : value).join('\n'))} />{line.slice(2)}</label> : null)}<p className="text-xs text-zinc-500">Save changes to keep checklist progress.</p></fieldset>}
+          <label className="block space-y-2 text-xs text-zinc-400"><span>Repeat after completion</span><select className="w-full rounded-lg border border-white/10 bg-zinc-900 p-2" value={frequency} onChange={e => setFrequency(e.target.value)}>{['NONE','DAILY','WEEKLY','MONTHLY','YEARLY'].map(value => <option key={value} value={value}>{value.toLowerCase()}</option>)}</select></label>
           <div className="pt-2 flex justify-end space-x-2">
             <button
               type="button"

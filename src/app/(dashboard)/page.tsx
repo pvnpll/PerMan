@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Check, ChevronRight, Circle, Loader2, Network, Plus, Search, X } from 'lucide-react';
 import type { Category, Task } from '@/lib/types';
-import { buildMemoryGroups } from '@/lib/memory-map';
+import { buildMemoryGroups, type MemoryGroup } from '@/lib/memory-map';
+import { isNeuronLit } from '@/lib/neural-layout';
 import { MemoryMap } from '@/components/dashboard/MemoryMap';
+import { TodayPanel } from '@/components/dashboard/TodayPanel';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';
 import { parseNaturalLanguageTask } from '@/lib/nlp-parser';
 import { formatShortDate, isTaskDueToday, isTaskOverdue } from '@/lib/date';
@@ -20,7 +22,7 @@ export default function DashboardPage() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('Active');
   const [selected, setSelected] = useState<Task | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<MemoryGroup | null>(null);
   const [editing, setEditing] = useState<Task | null>(null);
   const [capture, setCapture] = useState('');
   const [saving, setSaving] = useState(false);
@@ -76,7 +78,7 @@ export default function DashboardPage() {
     }
     return list;
   }, [tasks, filter, query, selectedGroup]);
-  const groups = useMemo(() => buildMemoryGroups(categories, tasks.filter(t => t.status !== 'DONE' && t.status !== 'CANCELLED')), [categories, tasks]);
+  const groups = useMemo(() => buildMemoryGroups(categories, tasks), [categories, tasks]);
   const focus = [...visible].sort((a, b) => {
     const rank = (t: Task) => (isTaskOverdue(t.due_date, t.timezone) ? 100 : 0) + (t.status === 'NEXT' ? 20 : 0) + ({ URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 }[t.priority]);
     return rank(b) - rank(a);
@@ -106,6 +108,7 @@ export default function DashboardPage() {
     </div>
     <form onSubmit={addTask} className="memory-panel flex items-center gap-3 px-4 py-3"><Plus size={18} className="shrink-0 text-zinc-500" /><input aria-label="Capture a task" value={capture} onChange={e => setCapture(e.target.value)} placeholder="What's on your mind? Add a task, an idea, a reminder…" className="min-w-0 flex-1 bg-transparent text-sm text-zinc-200 outline-none placeholder:text-zinc-600" /><button disabled={saving || !capture.trim()} className="rounded-md bg-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-white disabled:opacity-35">{saving ? <Loader2 size={14} className="animate-spin" /> : 'Capture'}</button></form>
     {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-red-400/20 bg-red-400/5 p-3 text-xs text-red-300">{error}<button onClick={() => void refresh()} className="underline">Retry</button></div>}
+    {!loading && <TodayPanel tasks={tasks} onEdit={setEditing} onRefresh={refresh} />}
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[
       { label: 'Active tasks', value: active.length, note: 'Across your life areas', color: 'text-zinc-100' },
       { label: 'Due today', value: dueToday.length, note: 'On your radar', color: 'text-zinc-100' },
@@ -158,7 +161,7 @@ export default function DashboardPage() {
               <h2 className="text-base font-semibold text-zinc-100 truncate">{selectedGroup.name}</h2>
             </div>
             <p className="mt-1 text-xs text-zinc-400">
-              {selectedGroup.tasks.length} active commitment{selectedGroup.tasks.length === 1 ? '' : 's'}
+              {selectedGroup.tasks.filter(isNeuronLit).length} unfinished · {selectedGroup.tasks.length} memories
               {selectedGroup.children.length > 0 && ` · ${selectedGroup.children.length} subcategories`}
             </p>
 
@@ -168,8 +171,8 @@ export default function DashboardPage() {
                 <span className="text-zinc-200 font-medium">{selectedGroup.children.length}</span>
               </div>
               <div className="flex justify-between text-zinc-400">
-                <span>Active Tasks:</span>
-                <span className="text-zinc-200 font-medium">{selectedGroup.tasks.length}</span>
+                <span>Unfinished tasks:</span>
+                <span className="text-zinc-200 font-medium">{selectedGroup.tasks.filter(isNeuronLit).length}</span>
               </div>
             </div>
 
@@ -217,10 +220,10 @@ export default function DashboardPage() {
               <span className="text-zinc-500 font-normal">Holistic Perspective.</span>
             </h2>
             <p className="mt-2 text-xs leading-5 text-zinc-400">
-              Your tasks connect to the areas of your life. Select a circle in the map to explore commitments.
+              Your tasks form a living network. Unfinished neurons glow; completed memories stay, quietly connected.
             </p>
             <div className="mt-5 space-y-2 border-t border-white/[.07] pt-4">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">Life Area Distribution</p>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">Memory areas</p>
               {groups.slice(0, 6).map((g, i) => (
                 <div
                   key={g.id}

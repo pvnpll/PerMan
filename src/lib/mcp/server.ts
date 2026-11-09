@@ -80,7 +80,7 @@ export function createPerManMcpServer(authInfo: McpAuthInfo) {
 
       const projectName = args.project_name || parsed.projectName;
       const organization = await organizeTask(userId, {
-        categoryName: args.category_name || (projectName ? 'Projects' : 'Personal'),
+        categoryName: args.category_name || (projectName ? 'Development & Projects' : 'Personal & Life Admin'),
         subcategoryName: args.subcategory_name || (!projectName ? parsed.categoryName : undefined),
         projectName,
       });

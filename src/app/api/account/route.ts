@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PM_TABLES } from '@/lib/db-tables';
 import { ensureUserProfile } from '@/lib/services/profile.service';
+import { getAllWorkspaceCapturePaths } from '@/lib/workspace';
 import crypto from 'crypto';
 
 export async function GET() {
@@ -75,6 +76,27 @@ export async function DELETE() {
   }
 
   const admin = createAdminClient();
+
+  // Remove only this user's PerMan screenshots across all pages before cascading workspace records.
+  let paths: string[] = [];
+  try {
+    paths = await getAllWorkspaceCapturePaths(admin, user.id);
+  } catch (err: any) {
+    return NextResponse.json({ error: 'Could not read screenshot data. Please retry.' }, { status: 500 });
+  }
+
+  // Remove files in safe chunks
+  const CHUNK_SIZE = 500;
+  for (let i = 0; i < paths.length; i += CHUNK_SIZE) {
+    const chunk = paths.slice(i, i + CHUNK_SIZE);
+    const { error: removeError } = await admin.storage.from('pm-captures').remove(chunk);
+    if (removeError) {
+      return NextResponse.json({ error: 'Could not delete screenshots. Please retry.' }, { status: 500 });
+    }
+  }
+
+  const { error: workspaceError } = await admin.from('pm_workspace_items').delete().eq('user_id', user.id);
+  if (workspaceError) return NextResponse.json({ error: 'Could not delete workspace. Please retry.' }, { status: 500 });
 
   // Cascade or explicitly clean pm_ tables
   await admin.from(PM_TABLES.REMINDERS).delete().eq('user_id', user.id);

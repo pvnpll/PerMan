@@ -27,6 +27,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onRefresh, onEdit }: TaskCardProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
 
   const isDone = task.status === 'DONE';
@@ -35,20 +36,24 @@ export function TaskCard({ task, onRefresh, onEdit }: TaskCardProps) {
 
   const handleToggleComplete = async () => {
     setLoading(true);
+    setError(null);
     try {
-      if (isDone) {
-        // Reopen to INBOX or NEXT
-        await fetch(`/api/tasks/${task.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'INBOX' }),
-        });
-      } else {
-        await fetch(`/api/tasks/${task.id}/complete`, { method: 'POST' });
+      const res = isDone
+        ? await fetch(`/api/tasks/${task.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'INBOX' }),
+          })
+        : await fetch(`/api/tasks/${task.id}/complete`, { method: 'POST' });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `Could not ${isDone ? 'reopen' : 'complete'} task (HTTP ${res.status}).`);
+        return;
       }
       onRefresh();
-    } catch {
-      // ignore
+    } catch (err: any) {
+      setError(err.message || `Network error while ${isDone ? 'reopening' : 'completing'} task.`);
     } finally {
       setLoading(false);
     }
@@ -57,11 +62,17 @@ export function TaskCard({ task, onRefresh, onEdit }: TaskCardProps) {
   const handleDelete = async () => {
     if (!confirm(`Delete "${task.title}" permanently?`)) return;
     setLoading(true);
+    setError(null);
     try {
-      await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `Could not delete task (HTTP ${res.status}).`);
+        return;
+      }
       onRefresh();
-    } catch {
-      // ignore
+    } catch (err: any) {
+      setError(err.message || 'Network error while deleting task.');
     } finally {
       setLoading(false);
     }
@@ -69,11 +80,17 @@ export function TaskCard({ task, onRefresh, onEdit }: TaskCardProps) {
 
   const handleArchive = async () => {
     setLoading(true);
+    setError(null);
     try {
-      await fetch(`/api/tasks/${task.id}/archive`, { method: 'POST' });
+      const res = await fetch(`/api/tasks/${task.id}/archive`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `Could not archive task (HTTP ${res.status}).`);
+        return;
+      }
       onRefresh();
-    } catch {
-      // ignore
+    } catch (err: any) {
+      setError(err.message || 'Network error while archiving task.');
     } finally {
       setLoading(false);
     }
@@ -102,7 +119,8 @@ export function TaskCard({ task, onRefresh, onEdit }: TaskCardProps) {
           type="button"
           onClick={handleToggleComplete}
           disabled={loading}
-          className="mt-0.5 text-zinc-500 hover:text-zinc-300 transition cursor-pointer"
+          aria-label={isDone ? `Mark "${task.title}" as incomplete` : `Mark "${task.title}" as complete`}
+          className="mt-0.5 text-zinc-500 hover:text-zinc-300 transition cursor-pointer disabled:opacity-50"
         >
           {isDone ? (
             <CheckCircle className="w-5 h-5 text-emerald-400" />
@@ -217,6 +235,7 @@ export function TaskCard({ task, onRefresh, onEdit }: TaskCardProps) {
           <button
             type="button"
             onClick={() => setShowMenu(!showMenu)}
+            aria-label={`Open actions for "${task.title}"`}
             className="text-zinc-500 hover:text-zinc-300 p-1.5 rounded-lg hover:bg-white/[.06] transition"
           >
             <MoreVertical className="w-4 h-4" />
@@ -235,14 +254,16 @@ export function TaskCard({ task, onRefresh, onEdit }: TaskCardProps) {
               </button>
               <button
                 onClick={handleArchive}
-                className="w-full text-left px-3 py-2 hover:bg-white/[.06] flex items-center space-x-2 text-zinc-400 hover:text-zinc-200"
+                disabled={loading}
+                className="w-full text-left px-3 py-2 hover:bg-white/[.06] flex items-center space-x-2 text-zinc-400 hover:text-zinc-200 disabled:opacity-50"
               >
                 <Archive className="w-3.5 h-3.5" />
                 <span>Archive</span>
               </button>
               <button
                 onClick={handleDelete}
-                className="w-full text-left px-3 py-2 hover:bg-red-950/50 flex items-center space-x-2 text-red-400"
+                disabled={loading}
+                className="w-full text-left px-3 py-2 hover:bg-red-950/50 flex items-center space-x-2 text-red-400 disabled:opacity-50"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete</span>
@@ -251,6 +272,25 @@ export function TaskCard({ task, onRefresh, onEdit }: TaskCardProps) {
           )}
         </div>
       </div>
+
+      {error && (
+        <div
+          role="alert"
+          className="mt-2.5 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-[11px] flex items-center justify-between gap-2"
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-400" />
+            <span className="truncate">{error}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-zinc-400 hover:text-white shrink-0 underline text-[10px]"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </div>
   );
 }

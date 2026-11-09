@@ -21,27 +21,27 @@ beforeEach(() => {
 });
 
 describe('personal memory organization', () => {
-  it('creates Projects → arbitrary project name and links the task to both', async () => {
+  it('creates Development & Projects → arbitrary project name and links the task to both', async () => {
     expect(await organizeTask('user', { projectName: 'New App' })).toEqual({
       category_id: 'root', subcategory_id: 'child', project_id: 'project',
     });
-    expect(categories.createCategory).toHaveBeenNthCalledWith(1, 'user', expect.objectContaining({ name: 'Projects', parent_id: null }));
+    expect(categories.createCategory).toHaveBeenNthCalledWith(1, 'user', expect.objectContaining({ name: 'Development & Projects', parent_id: null }));
     expect(categories.createCategory).toHaveBeenNthCalledWith(2, 'user', expect.objectContaining({ name: 'New App', parent_id: 'root' }));
     expect(projects.createProject).toHaveBeenCalledWith('user', expect.objectContaining({ name: 'New App', category_id: 'child' }));
   });
 
-  it('creates Personal → Health without a project', async () => {
+  it('creates Personal & Life Admin → Health without a project', async () => {
     expect(await organizeTask('user', { subcategoryName: 'Health' })).toEqual({
       category_id: 'root', subcategory_id: 'child', project_id: null,
     });
-    expect(categories.createCategory).toHaveBeenNthCalledWith(1, 'user', expect.objectContaining({ name: 'Personal' }));
+    expect(categories.createCategory).toHaveBeenNthCalledWith(1, 'user', expect.objectContaining({ name: 'Personal & Life Admin' }));
     expect(projects.createProject).not.toHaveBeenCalled();
   });
 
   it('reuses exact names case-insensitively within the correct parent', async () => {
     vi.mocked(categories.getCategories).mockResolvedValue([
-      { id: 'wrong', name: 'Personal', subcategories: [{ id: 'wrong-child', name: 'App' }] },
-      { id: 'root', name: 'Projects', subcategories: [{ id: 'child', name: 'App' }] },
+      { id: 'wrong', name: 'Personal & Life Admin', subcategories: [{ id: 'wrong-child', name: 'App' }] },
+      { id: 'root', name: 'Development & Projects', subcategories: [{ id: 'child', name: 'App' }] },
     ] as Category[]);
     vi.mocked(projects.getProjects).mockResolvedValue([{ id: 'project', name: 'App', category_id: 'child', status: 'ACTIVE' }] as Project[]);
     expect(await organizeTask('user', { projectName: ' app ' })).toEqual({
@@ -49,6 +49,17 @@ describe('personal memory organization', () => {
     });
     expect(categories.createCategory).not.toHaveBeenCalled();
     expect(projects.createProject).not.toHaveBeenCalled();
+  });
+
+  it('resolves categoryName "Projects" to existing "Development & Projects"', async () => {
+    vi.mocked(categories.getCategories).mockResolvedValue([
+      { id: 'dev-root', name: 'Development & Projects', subcategories: [{ id: 'child', name: 'App' }] },
+    ] as Category[]);
+    vi.mocked(projects.getProjects).mockResolvedValue([{ id: 'project', name: 'App', category_id: 'child', status: 'ACTIVE' }] as Project[]);
+    expect(await organizeTask('user', { categoryName: 'Projects', projectName: 'App' })).toEqual({
+      category_id: 'dev-root', subcategory_id: 'child', project_id: 'project',
+    });
+    expect(categories.createCategory).not.toHaveBeenCalled();
   });
 
   it('does not confuse partial project names', async () => {

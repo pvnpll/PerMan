@@ -1,31 +1,103 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PM_TABLES } from '@/lib/db-tables';
-import { Category } from '@/lib/types';
+import { Category, TaskCounts } from '@/lib/types';
 import { CreateCategoryInput } from '@/lib/validation';
+
+export function computeCategoryTaskCounts(
+  categories: Category[],
+  tasks: Array<{ id: string; category_id: string | null; subcategory_id: string | null; status: string }>
+): Category[] {
+  const subIdsByParent = new Map<string, Set<string>>();
+  for (const cat of categories) {
+    if (cat.parent_id) {
+      if (!subIdsByParent.has(cat.parent_id)) {
+        subIdsByParent.set(cat.parent_id, new Set());
+      }
+      subIdsByParent.get(cat.parent_id)!.add(cat.id);
+    }
+  }
+
+  const countsMap = new Map<string, TaskCounts>();
+  const activeStatuses = new Set(['INBOX', 'NEXT', 'SCHEDULED', 'WAITING']);
+
+  for (const cat of categories) {
+    const isRoot = !cat.parent_id;
+    const subIds = isRoot ? subIdsByParent.get(cat.id) : undefined;
+    const seenTaskIds = new Set<string>();
+
+    let active = 0;
+    let completed = 0;
+    let total = 0;
+
+    for (const t of tasks) {
+      if (seenTaskIds.has(t.id)) continue;
+
+      let matches = false;
+      if (isRoot) {
+        matches = t.category_id === cat.id || Boolean(t.subcategory_id && subIds?.has(t.subcategory_id));
+      } else {
+        matches = t.subcategory_id === cat.id;
+      }
+
+      if (matches) {
+        seenTaskIds.add(t.id);
+        total++;
+        if (activeStatuses.has(t.status)) {
+          active++;
+        } else if (t.status === 'DONE') {
+          completed++;
+        }
+      }
+    }
+
+    countsMap.set(cat.id, { active, completed, total });
+  }
+
+  const rootCategories = categories.filter((c) => !c.parent_id);
+
+  return rootCategories.map((root) => ({
+    ...root,
+    counts: countsMap.get(root.id) || { active: 0, completed: 0, total: 0 },
+    subcategories: categories
+      .filter((c) => c.parent_id === root.id)
+      .map((sub) => ({
+        ...sub,
+        counts: countsMap.get(sub.id) || { active: 0, completed: 0, total: 0 },
+      })),
+  }));
+}
 
 export async function getCategories(userId: string): Promise<Category[]> {
   const admin = createAdminClient();
 
-  const { data, error } = await admin
-    .from(PM_TABLES.CATEGORIES)
-    .select('*')
-    .eq('user_id', userId)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true });
+  const [categoriesRes, tasksRes] = await Promise.all([
+    admin
+      .from(PM_TABLES.CATEGORIES)
+      .select('*')
+      .eq('user_id', userId)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true }),
+    admin
+      .from(PM_TABLES.TASKS)
+      .select('id, category_id, subcategory_id, status')
+      .eq('user_id', userId)
+      .is('archived_at', null),
+  ]);
 
-  if (error) {
-    console.error('Error fetching categories:', error);
-    throw new Error(`Failed to fetch categories: ${error.message}`);
+  if (categoriesRes.error) {
+    console.error('Error fetching categories:', categoriesRes.error);
+    throw new Error(`Failed to fetch categories: ${categoriesRes.error.message}`);
   }
 
-  const all = (data || []) as Category[];
-  const rootCategories: Category[] = all.filter((c) => !c.parent_id);
+  if (tasksRes.error) {
+    console.error('Error fetching category task counts:', tasksRes.error);
+    throw new Error(`Failed to fetch category task counts: ${tasksRes.error.message}`);
+  }
 
-  // Nest subcategories
-  return rootCategories.map((root) => ({
-    ...root,
-    subcategories: all.filter((c) => c.parent_id === root.id),
-  }));
+  return computeCategoryTaskCounts(
+    (categoriesRes.data || []) as Category[],
+    (tasksRes.data || []) as Array<{ id: string; category_id: string | null; subcategory_id: string | null; status: string }>
+  );
 }
 
 export async function createCategory(
@@ -100,7 +172,85 @@ export async function updateCategory(
 export async function deleteCategory(userId: string, categoryId: string): Promise<boolean> {
   const admin = createAdminClient();
 
-  // Tasks referencing this category will have category_id set to NULL automatically by db foreign key ON DELETE SET NULL.
+  // 1. Fetch the category being deleted to inspect hierarchy
+  const { data: targetCat } = await admin
+    .from(PM_TABLES.CATEGORIES)
+    .select('*')
+    .eq('id', categoryId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!targetCat) return true;
+
+  if (!targetCat.parent_id) {
+    // Root category: Find a safe fallback root category (preferably Development & Projects or Personal & Life Admin)
+    const { data: fallbackCats } = await admin
+      .from(PM_TABLES.CATEGORIES)
+      .select('id, name')
+      .eq('user_id', userId)
+      .is('parent_id', null)
+      .neq('id', categoryId);
+
+    const devProjFallback = (fallbackCats || []).find(c => /development\s*&\s*projects?/i.test(c.name));
+    const fallbackRoot = devProjFallback || fallbackCats?.[0];
+
+    // Find any subcategories under this root category
+    const { data: children } = await admin
+      .from(PM_TABLES.CATEGORIES)
+      .select('id')
+      .eq('parent_id', categoryId)
+      .eq('user_id', userId);
+
+    const childIds = (children || []).map(c => c.id);
+    const affectedCategoryIds = [categoryId, ...childIds];
+
+    if (fallbackRoot) {
+      // Reassign projects to fallback root
+      await admin
+        .from(PM_TABLES.PROJECTS)
+        .update({ category_id: fallbackRoot.id })
+        .eq('user_id', userId)
+        .in('category_id', affectedCategoryIds);
+
+      // Re-parent subcategories so they are not cascade-deleted
+      if (childIds.length > 0) {
+        await admin
+          .from(PM_TABLES.CATEGORIES)
+          .update({ parent_id: fallbackRoot.id })
+          .eq('user_id', userId)
+          .in('id', childIds);
+
+        // Update tasks pointing to these subcategories
+        await admin
+          .from(PM_TABLES.TASKS)
+          .update({ category_id: fallbackRoot.id })
+          .eq('user_id', userId)
+          .in('subcategory_id', childIds);
+      }
+
+      // Reassign remaining tasks pointing to this root category
+      await admin
+        .from(PM_TABLES.TASKS)
+        .update({ category_id: fallbackRoot.id })
+        .eq('user_id', userId)
+        .eq('category_id', categoryId);
+    }
+  } else {
+    // Subcategory: Safely preserve tasks and projects under the parent category
+    await admin
+      .from(PM_TABLES.TASKS)
+      .update({ subcategory_id: null, category_id: targetCat.parent_id })
+      .eq('user_id', userId)
+      .eq('subcategory_id', categoryId);
+
+    await admin
+      .from(PM_TABLES.PROJECTS)
+      .update({ category_id: targetCat.parent_id })
+      .eq('user_id', userId)
+      .eq('category_id', categoryId);
+  }
+
+  // Delete category from database
   const { error } = await admin
     .from(PM_TABLES.CATEGORIES)
     .delete()

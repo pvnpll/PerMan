@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PM_TABLES } from '@/lib/db-tables';
-
+import { getAllWorkspaceItems } from '@/lib/workspace';
 
 export async function GET() {
   const supabase = await createClient();
@@ -14,12 +14,13 @@ export async function GET() {
 
   const admin = createAdminClient();
 
-  const [tasksRes, categoriesRes, projectsRes, remindersRes, profileRes] = await Promise.all([
+  const [tasksRes, categoriesRes, projectsRes, remindersRes, profileRes, workspaceItems] = await Promise.all([
     admin.from(PM_TABLES.TASKS).select('*').eq('user_id', user.id),
     admin.from(PM_TABLES.CATEGORIES).select('*').eq('user_id', user.id),
     admin.from(PM_TABLES.PROJECTS).select('*').eq('user_id', user.id),
     admin.from(PM_TABLES.REMINDERS).select('*').eq('user_id', user.id),
     admin.from(PM_TABLES.PROFILES).select('*').eq('id', user.id).maybeSingle(),
+    getAllWorkspaceItems(admin, user.id),
   ]);
 
   const exportData = {
@@ -34,11 +35,13 @@ export async function GET() {
       categories: categoriesRes.data?.length || 0,
       projects: projectsRes.data?.length || 0,
       reminders: remindersRes.data?.length || 0,
+      workspace: workspaceItems.length,
     },
     categories: categoriesRes.data || [],
     projects: projectsRes.data || [],
     tasks: tasksRes.data || [],
     reminders: remindersRes.data || [],
+    workspace: workspaceItems,
   };
 
   return new Response(JSON.stringify(exportData, null, 2), {

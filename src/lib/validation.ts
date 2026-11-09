@@ -23,6 +23,24 @@ export const TaskSourceSchema = z.enum([
   'API',
 ]);
 
+export const RecurrenceFrequencySchema = z.enum([
+  'DAILY',
+  'WEEKLY',
+  'MONTHLY',
+  'YEARLY',
+  'CUSTOM',
+]);
+
+export const RecurrenceRuleSchema = z.object({
+  frequency: RecurrenceFrequencySchema,
+  interval: z.number().int().min(1, 'Interval must be a positive integer').max(1000).optional(),
+  count: z.number().int().min(1, 'Count must be at least 1').max(1000).optional().nullable(),
+  end_date: z.string().datetime({ offset: true }).optional().nullable(),
+  current_occurrence: z.number().int().min(1).optional().nullable(),
+});
+
+export type RecurrenceRuleInput = z.infer<typeof RecurrenceRuleSchema>;
+
 export const CreateTaskSchema = z.object({
   title: z.string().min(1, 'Title is required').max(500),
   description: z.string().optional().nullable(),
@@ -34,7 +52,7 @@ export const CreateTaskSchema = z.object({
   due_date: z.string().datetime({ offset: true }).optional().nullable(),
   reminder_time: z.string().datetime({ offset: true }).optional().nullable(),
   timezone: z.string().default('Asia/Kolkata'),
-  recurrence_rule: z.record(z.string(), z.any()).optional().nullable(),
+  recurrence_rule: RecurrenceRuleSchema.optional().nullable(),
   source: TaskSourceSchema.default('APP'),
   external_url: z.string().url().optional().nullable().or(z.literal('')),
   merchant: z.string().optional().nullable(),

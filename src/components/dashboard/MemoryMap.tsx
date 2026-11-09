@@ -1,717 +1,112 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  Focus,
-  Minus,
-  Plus,
-  Network,
-  Circle,
-  Orbit,
-  LayoutGrid,
-  Sparkles,
-  ChevronRight,
-  CheckCircle2,
-  Clock,
-  Layers,
-  Folder,
-} from 'lucide-react';
+import './neural-map.css';
+
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Brain, Check, Focus, List, Minus, Plus, Sparkles } from 'lucide-react';
 import type { Task } from '@/lib/types';
 import type { MemoryGroup } from '@/lib/memory-map';
+import { dendrites, isNeuronLit, layoutNeurons, neuralConnections, NEURON_PAGE_SIZE } from '@/lib/neural-layout';
 
-const categoryColorPalette = [
-  '#818cf8', // Indigo
-  '#34d399', // Emerald
-  '#f472b6', // Pink
-  '#38bdf8', // Sky
-  '#fbbf24', // Amber
-  '#a78bfa', // Purple
-  '#fb923c', // Orange
-  '#4ade80', // Green
-  '#2dd4bf', // Teal
-  '#f87171', // Rose
+const HEMISPHERE = 'M488 104 C458 61 397 54 357 76 C315 61 271 85 264 121 C220 128 191 162 199 204 C164 233 163 277 183 309 C153 346 172 394 195 410 C182 457 221 493 250 500 C258 547 302 558 333 548 C366 590 424 578 447 553 C472 540 487 507 487 468 Z';
+const FOLDS = [
+  'M354 91 C326 127 370 146 341 176 S291 212 314 245 S365 270 339 309 S286 350 312 386 S353 423 331 458 S317 511 351 540',
+  'M447 104 C400 112 423 148 394 171 S356 198 379 228 S439 239 418 277 S364 301 385 341 S440 374 417 409 S372 441 394 471 S432 504 421 542',
+  'M270 137 C286 160 253 188 270 217 S298 244 267 272 S230 315 253 340 S284 370 258 398 S238 446 272 467 S291 505 285 525',
+  'M206 210 C235 202 240 175 264 174 M186 292 C213 272 233 283 249 265 M194 388 C215 375 231 388 250 375 M254 499 C283 484 298 497 316 481',
+  'M485 194 C454 183 451 215 428 218 M486 332 C454 319 448 345 425 338 M480 461 C455 447 450 464 431 466',
 ];
 
-export function MemoryMap({
-  groups,
-  onSelectTask,
-  onSelectGroup,
-}: {
-  groups: MemoryGroup[];
-  onSelectTask: (task: Task) => void;
-  onSelectGroup?: (group: MemoryGroup | null) => void;
-}) {
+export function MemoryMap({ groups, onSelectTask, onSelectGroup }: { groups: MemoryGroup[]; onSelectTask: (task: Task) => void; onSelectGroup?: (group: MemoryGroup | null) => void }) {
   const [path, setPath] = useState<string[]>([]);
   const [zoom, setZoom] = useState(1);
   const [page, setPage] = useState(0);
-  const [viewMode, setViewMode] = useState<'constellation' | 'grid'>('constellation');
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-
-  const surfaceRef = useRef<HTMLDivElement>(null);
-  const graphView = path.join('/');
-
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (!surface) return;
-    const center = () => {
-      surface.scrollLeft = Math.max(0, (surface.scrollWidth - surface.clientWidth) / 2);
-    };
-    const observer = new ResizeObserver(center);
-    observer.observe(surface);
-    center();
-    return () => observer.disconnect();
-  }, [zoom, graphView, groups.length, viewMode]);
-
-  // Resolve current active drill-down group
+  const [view, setView] = useState<'brain' | 'list'>('brain');
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const surface = useRef<HTMLDivElement>(null);
+  const prefix = useId().replaceAll(':', '');
   let current: MemoryGroup | undefined;
   let level = groups;
   for (const id of path) {
-    current = level.find((g) => g.id === id);
-    if (!current) break;
-    level = current.children;
+    const found = level.find(item => item.id === id);
+    if (!found) { current = undefined; break; }
+    current = found; level = found.children;
   }
-  const currentPathValid = path.length === 0 || !!current;
-  const group = currentPathValid ? current : undefined;
-
+  const group = current;
+  const tasks = useMemo(() => [...new Map((group ? group.tasks : groups.flatMap(item => item.tasks)).filter(task => !task.archived_at).map(task => [task.id, task])).values()].sort((a, b) => a.id.localeCompare(b.id)), [group, groups]);
+  const currentPage = Math.min(page, Math.max(0, Math.ceil(tasks.length / NEURON_PAGE_SIZE) - 1));
+  const pageTasks = useMemo(() => tasks.slice(currentPage * NEURON_PAGE_SIZE, (currentPage + 1) * NEURON_PAGE_SIZE), [tasks, currentPage]);
+  const neurons = useMemo(() => layoutNeurons(pageTasks), [pageTasks]);
+  const connections = useMemo(() => neuralConnections(neurons), [neurons]);
+  const firing = tasks.filter(isNeuronLit).length;
+  const done = tasks.filter(task => task.status === 'DONE').length;
+  const resting = tasks.length - firing;
+  const focusedTask = tasks.find(task => task.id === (hovered || selected));
+  const areas = (group ? group.children : groups).filter(item => item.tasks.length);
+  useEffect(() => { onSelectGroup?.(group || null); }, [group, onSelectGroup]);
   useEffect(() => {
-    onSelectGroup?.(group || null);
-  }, [group, onSelectGroup]);
+    const element = surface.current;
+    if (!element) return;
+    element.scrollLeft = Math.max(0, (element.scrollWidth - element.clientWidth) / 2);
+  }, [zoom, view]);
+  const open = (task: Task) => { setSelected(task.id); onSelectTask(task); };
+  const navigate = (next: string[]) => { setPath(next); setPage(0); setHovered(null); setSelected(null); };
 
-  // Child nodes resolution
-  const childTaskIds = new Set(group?.children.flatMap((c) => c.tasks.map((t) => t.id)));
-  const nodes = group
-    ? [
-        ...group.children.map((c, idx) => ({
-          id: c.id,
-          name: c.name,
-          count: c.tasks.length,
-          group: c,
-          task: undefined as Task | undefined,
-          color: categoryColorPalette[idx % categoryColorPalette.length],
-        })),
-        ...group.tasks
-          .filter((t) => !childTaskIds.has(t.id))
-          .map((t, idx) => ({
-            id: t.id,
-            name: t.title,
-            count: 0,
-            group: undefined,
-            task: t,
-            color: categoryColorPalette[(group.children.length + idx) % categoryColorPalette.length],
-          })),
-      ]
-    : groups.map((g, i) => ({
-        id: g.id,
-        name: g.name,
-        count: g.tasks.length,
-        group: g,
-        task: undefined as Task | undefined,
-        color: categoryColorPalette[i % categoryColorPalette.length],
-      }));
-
-  const PAGE_SIZE = 12;
-  const currentPage = Math.min(page, Math.max(0, Math.ceil(nodes.length / PAGE_SIZE) - 1));
-  const visible = nodes.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE);
-
-  const center = { x: 480, y: 270 };
-  const totalActiveTasks = groups.reduce((acc, g) => acc + g.tasks.length, 0);
-
-  const handleNodeClick = (node: (typeof nodes)[0]) => {
-    if (node.task) {
-      onSelectTask(node.task);
-    } else {
-      setPath(group ? [...path, node.id] : [node.id]);
-      setPage(0);
-      setHoveredNodeId(null);
-    }
-  };
-
-  return (
-    <section className="memory-panel overflow-hidden border border-white/[.08] rounded-xl bg-[#0c0e12] shadow-2xl relative">
-      {/* Graph Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[.07] px-5 py-3.5 bg-[#111318]/90 backdrop-blur-md">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-            <Network size={16} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-zinc-100 tracking-tight">Memory Map</span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                ACTIVE
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-500 hidden sm:block">
-              {groups.length} life areas · {totalActiveTasks} commitments mapped
-            </p>
-          </div>
-        </div>
-
-        {/* View Mode & Legend */}
-        <div className="flex items-center gap-3">
-          {/* Legend */}
-          <div className="hidden lg:flex items-center gap-3 text-[11px] text-zinc-400 border-r border-white/[.07] pr-3 mr-1">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]" /> Life areas
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" /> Projects & tasks
-            </span>
-          </div>
-
-          {/* Mode Switcher */}
-          <div className="flex items-center bg-[#171923] p-0.5 rounded-lg border border-white/[.08]">
-            <button
-              type="button"
-              onClick={() => setViewMode('constellation')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md font-medium transition ${
-                viewMode === 'constellation'
-                  ? 'bg-white/[.12] text-zinc-100 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-              title="Constellation orbital view"
-            >
-              <Orbit size={13} />
-              <span className="hidden sm:inline">Constellation</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md font-medium transition ${
-                viewMode === 'grid'
-                  ? 'bg-white/[.12] text-zinc-100 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-              title="Cluster matrix card view"
-            >
-              <LayoutGrid size={13} />
-              <span className="hidden sm:inline">Clusters</span>
-            </button>
-          </div>
-        </div>
+  return <section className="neural-map memory-panel overflow-hidden" aria-label="Memory brain">
+    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[.06] px-5 py-4">
+      <div className="flex items-center gap-3"><span className="neural-brand"><Brain size={20} strokeWidth={1.3} /></span><div><h2 className="text-sm font-medium tracking-tight text-zinc-100">Memory brain</h2><p className="mt-1 text-[11px] text-zinc-500">A living map of your commitments.</p></div></div>
+      <div className="flex items-center gap-3"><span className={`neural-state ${firing ? 'is-firing' : ''}`}><span />{firing ? 'Thinking' : 'At rest'}</span><div className="flex rounded-lg border border-white/10 p-0.5" role="group" aria-label="Memory view"><button aria-label="Brain view" aria-pressed={view === 'brain'} className={`neural-view ${view === 'brain' ? 'is-selected' : ''}`} onClick={() => setView('brain')}><Brain size={14} /><span>Brain</span></button><button aria-label="Task list view" aria-pressed={view === 'list'} className={`neural-view ${view === 'list' ? 'is-selected' : ''}`} onClick={() => setView('list')}><List size={14} /><span>List</span></button></div></div>
+    </header>
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[.04] px-5 py-3">
+      <nav aria-label="Memory areas" className="flex flex-wrap items-center gap-2 text-xs"><button className="text-zinc-400 hover:text-white" onClick={() => navigate([])}>Whole brain</button>{group && <><span className="text-zinc-700">/</span><span className="text-[#d9c49b]">{group.name}</span><button aria-label="Back one memory area" className="map-control" onClick={() => navigate(path.slice(0, -1))}><ArrowLeft size={13} /></button></>}</nav>
+      <div className="flex flex-wrap gap-4 text-[10px] text-zinc-400"><span className="flex items-center gap-1.5"><span className="neural-legend-light" />{firing} unfinished · lit</span><span className="flex items-center gap-1.5"><span className="neural-legend-rest" />{done} done · unlit</span>{resting > done && <span>{resting - done} cancelled · unlit</span>}</div>
+    </div>
+    {areas.length > 0 && <div className="flex flex-wrap gap-2 px-5 pt-4" aria-label="Explore life areas and projects">{areas.map(area => <button key={area.id} className="neural-area" onClick={() => navigate(group ? [...path, area.id] : [area.id])}>{area.name}<span>{area.tasks.filter(isNeuronLit).length}/{area.tasks.length}</span></button>)}</div>}
+    {view === 'brain' ? <div className="neural-canvas-wrap">
+      <div className="neural-caption"><span>YOUR NEURAL LANDSCAPE</span><p>Every task leaves a connection.</p></div>
+      <div ref={surface} className="memory-map-surface overflow-auto" tabIndex={0} aria-label="Brain graph; use zoom controls or switch to task list for larger task buttons">
+        <svg className="neural-canvas" viewBox="0 0 1000 690" style={{ width: `${zoom * 100}%`, minWidth: `${zoom * 100}%` }} role="group" aria-label="Interactive brain. Unfinished task neurons glow; completed task neurons remain dark.">
+          <defs>
+            <radialGradient id={`${prefix}-ambient`}><stop stopColor="#23423c" stopOpacity=".26" /><stop offset="1" stopColor="#091012" stopOpacity="0" /></radialGradient>
+            <linearGradient id={`${prefix}-tissue`} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#17332f" stopOpacity=".15" /><stop offset="1" stopColor="#15242b" stopOpacity=".18" /></linearGradient>
+            <filter id={`${prefix}-glow`} x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="3.5" /></filter>
+          </defs>
+          <ellipse cx="500" cy="330" rx="420" ry="310" fill={`url(#${prefix}-ambient)`} />
+          <g aria-hidden="true" className="neural-anatomy">
+            <path d={HEMISPHERE} fill={`url(#${prefix}-tissue)`} stroke="#749c91" strokeOpacity=".3" strokeWidth="1.1" />
+            <path d={HEMISPHERE} transform="translate(1000 0) scale(-1 1)" fill={`url(#${prefix}-tissue)`} stroke="#749c91" strokeOpacity=".3" strokeWidth="1.1" />
+            {FOLDS.map((fold, index) => <g key={index}><path d={fold} /><path d={fold} transform="translate(1000 0) scale(-1 1)" /></g>)}
+            <path d="M493 115 C487 235 498 285 492 385 S491 489 475 537 M507 115 C513 235 502 285 508 385 S509 489 525 537" strokeOpacity=".24" />
+            <path d="M452 555 C459 591 469 604 477 634 Q500 649 523 634 C531 604 541 591 548 555 M477 585 Q500 598 523 585 M482 612 Q500 621 518 612" strokeOpacity=".18" />
+            <path d="M174 145 H135 V203 M826 145 H865 V203 M178 493 H135 V435 M822 493 H865 V435" strokeOpacity=".2" strokeWidth=".7" />
+            <text x="125" y="125" className="neural-annotation">LEFT HEMISPHERE</text><text x="875" y="125" textAnchor="end" className="neural-annotation">RIGHT HEMISPHERE</text>
+          </g>
+          <g aria-hidden="true">{connections.map(edge => <g key={`${edge.from.task.id}:${edge.to.task.id}`} data-lit={edge.lit}><path d={edge.path} fill="none" stroke={edge.lit ? edge.from.color : '#344548'} strokeWidth={edge.lit ? '.9' : '.6'} strokeOpacity={edge.lit ? '.28' : '.34'} />{edge.lit && <path className="neural-impulse" d={edge.path} fill="none" stroke={edge.from.color} strokeWidth="1.2" strokeDasharray="2 48" style={{ animationDelay: `${-(edge.from.seed % 70) / 10}s` }} />}</g>)}</g>
+          {neurons.map(node => {
+            const isSelected = selected === node.task.id;
+            const isHovered = hovered === node.task.id;
+            const status = node.lit ? 'unfinished, glowing' : node.task.status === 'DONE' ? 'completed, unlit' : 'cancelled, unlit';
+            return <g key={node.task.id} role="button" tabIndex={0} className="neuron-control" data-task-id={node.task.id} data-status={node.task.status} data-lit={node.lit} aria-label={`${node.task.title}, ${status}`} onClick={() => open(node.task)} onMouseEnter={() => setHovered(node.task.id)} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered(node.task.id)} onBlur={() => setHovered(null)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(node.task); } }}>
+              <title>{node.task.title} — {node.task.status.toLowerCase()} · {node.lit ? 'lit' : 'unlit'}</title>
+              {node.lit && <circle className="neural-aura" cx={node.x} cy={node.y} r="17" fill={node.color} fillOpacity=".14" filter={`url(#${prefix}-glow)`} style={{ animationDelay: `${-(node.seed % 40) / 10}s` }} />}
+              <g aria-hidden="true" className={node.lit ? 'neural-dendrites is-lit' : 'neural-dendrites'} stroke={node.lit ? node.color : '#35484b'} strokeOpacity={node.lit ? '.65' : '.65'} strokeWidth={node.lit ? '.9' : '.8'} fill="none">{dendrites(node).map((branch, index) => <path key={index} d={branch} />)}</g>
+              <circle className="neural-selection" cx={node.x} cy={node.y} r="12" fill="none" stroke={node.lit ? node.color : '#778386'} strokeWidth="1" strokeDasharray="2 3" opacity={isSelected || isHovered ? .9 : 0} />
+              {node.lit && <circle cx={node.x} cy={node.y} r="6" fill={node.color} opacity=".5" filter={`url(#${prefix}-glow)`} />}
+              <path className="neural-soma" d={`M${node.x - 4.5},${node.y + 1} Q${node.x - 3},${node.y - 5} ${node.x + 1},${node.y - 3.5} Q${node.x + 6},${node.y - 1} ${node.x + 3.5},${node.y + 3} Q${node.x - 1},${node.y + 6} ${node.x - 4.5},${node.y + 1}`} fill={node.lit ? node.color : '#172429'} stroke={node.lit ? '#ffe6b6' : '#506064'} strokeWidth=".7" />
+              {node.lit && <circle cx={node.x} cy={node.y} r="1.5" fill="#fff4d8" />}
+              <circle cx={node.x} cy={node.y} r="15" fill="transparent" />
+            </g>;
+          })}
+          {!tasks.length && <text x="500" y="332" textAnchor="middle" fill="#85918f" fontSize="15">Capture a task to form your first connection.</text>}
+          <g aria-hidden="true"><path d="M395 661 H455 M545 661 H605" stroke="#4d6661" strokeWidth=".6" /><text x="500" y="664" textAnchor="middle" className="neural-annotation">{firing ? 'SIGNALS IN MOTION' : 'A QUIET MIND'}</text></g>
+        </svg>
       </div>
-
-      {/* Breadcrumb Navigation Bar */}
-      <div className="flex min-h-11 items-center justify-between gap-3 px-5 py-2 bg-[#0e1015] border-b border-white/[.04]">
-        <div className="flex items-center gap-2 text-xs">
-          <button
-            onClick={() => {
-              setPath([]);
-              setZoom(1);
-              setPage(0);
-            }}
-            className={`transition font-medium ${
-              path.length === 0 ? 'text-zinc-200' : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            All Life Areas
-          </button>
-          {group && (
-            <>
-              <span className="text-zinc-600">/</span>
-              <span className="text-indigo-300 font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                {group.name}
-              </span>
-            </>
-          )}
-        </div>
-
-        {path.length > 0 && (
-          <button
-            onClick={() => {
-              setPath((p) => p.slice(0, -1));
-              setPage(0);
-            }}
-            className="flex items-center gap-1 text-xs font-medium text-zinc-300 hover:text-white px-2.5 py-1 rounded-md bg-white/[.04] hover:bg-white/[.08] transition"
-          >
-            <ArrowLeft size={13} /> Back to Overview
-          </button>
-        )}
-      </div>
-
-      {/* Mode 1: Constellation Orbital Graph */}
-      {viewMode === 'constellation' ? (
-        nodes.length === 0 ? (
-          <div className="flex h-[450px] flex-col items-center justify-center gap-3 px-6 text-center">
-            <Network className="text-zinc-600 animate-pulse" size={42} strokeWidth={1} />
-            <h3 className="text-sm font-medium text-zinc-200">No subcategories or tasks yet</h3>
-            <p className="max-w-xs text-xs leading-6 text-zinc-500">
-              Add your first task in this category to visualize its neural connections.
-            </p>
-          </div>
-        ) : (
-          <div ref={surfaceRef} className="memory-map-surface overflow-auto relative select-none">
-            <svg
-              viewBox="0 0 960 540"
-              style={{
-                width: `${zoom * 100}%`,
-                minWidth: 700,
-                height: 'auto',
-                minHeight: 440,
-              }}
-              aria-label="Interactive memory constellation map. Select a life area or project to explore."
-            >
-              <defs>
-                {/* Radial ambient cosmic glow */}
-                <radialGradient id="space-glow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.14" />
-                  <stop offset="40%" stopColor="#4f46e5" stopOpacity="0.05" />
-                  <stop offset="100%" stopColor="#0c0e12" stopOpacity="0" />
-                </radialGradient>
-
-                {/* Subtle starry grid */}
-                <pattern id="memory-stars" width="28" height="28" patternUnits="userSpaceOnUse">
-                  <circle cx="2" cy="2" r="0.75" fill="#ffffff" opacity="0.07" />
-                </pattern>
-
-                {/* Glow filter */}
-                <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="6" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              {/* Background Backdrop */}
-              <rect width="960" height="540" fill="#0c0e12" />
-              <rect width="960" height="540" fill="url(#memory-stars)" />
-              <rect width="960" height="540" fill="url(#space-glow)" />
-
-              {/* Concentric Orbit Rings */}
-              <circle
-                cx={center.x}
-                cy={center.y}
-                r="305"
-                fill="none"
-                stroke="#ffffff"
-                strokeOpacity="0.03"
-                strokeDasharray="4 8"
-              />
-              <circle
-                cx={center.x}
-                cy={center.y}
-                r="195"
-                fill="none"
-                stroke="#ffffff"
-                strokeOpacity="0.04"
-                strokeDasharray="2 6"
-              />
-              <circle
-                cx={center.x}
-                cy={center.y}
-                r="95"
-                fill="none"
-                stroke="#818cf8"
-                strokeOpacity="0.12"
-              />
-
-              {/* Connection Beams */}
-              {visible.map((node, i) => {
-                const angle = (i / visible.length) * Math.PI * 2 - Math.PI / 2;
-                const rx = 340;
-                const ry = 205;
-                const x = center.x + Math.cos(angle) * rx;
-                const y = center.y + Math.sin(angle) * ry;
-                const color = node.color || categoryColorPalette[i % categoryColorPalette.length];
-                const isHovered = hoveredNodeId === node.id;
-
-                const cpx = center.x + (x - center.x) * 0.35;
-                const cpy = center.y + (y - center.y) * 0.35;
-
-                return (
-                  <g key={`beam-${node.id}`}>
-                    {/* Beam background glow */}
-                    <path
-                      d={`M ${center.x} ${center.y} Q ${cpx} ${cpy} ${x} ${y}`}
-                      stroke={color}
-                      strokeOpacity={isHovered ? 0.7 : node.count > 0 ? 0.35 : 0.1}
-                      strokeWidth={isHovered ? 2.5 : node.count > 0 ? 1.5 : 0.75}
-                      strokeDasharray={node.count > 0 ? '4 4' : 'none'}
-                      fill="none"
-                      className="transition-all duration-300"
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Orbiting Category / Task Nodes */}
-              {visible.map((node, i) => {
-                const angle = (i / visible.length) * Math.PI * 2 - Math.PI / 2;
-                const rx = 340;
-                const ry = 205;
-                const x = center.x + Math.cos(angle) * rx;
-                const y = center.y + Math.sin(angle) * ry;
-                const color = node.color || categoryColorPalette[i % categoryColorPalette.length];
-                const isHovered = hoveredNodeId === node.id;
-                const hasTasks = node.count > 0;
-
-                return (
-                  <g
-                    key={node.id}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${node.name}${hasTasks ? `, ${node.count} tasks, explore` : ', view'}`}
-                    onClick={() => handleNodeClick(node)}
-                    onMouseEnter={() => setHoveredNodeId(node.id)}
-                    onMouseLeave={() => setHoveredNodeId(null)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleNodeClick(node);
-                      }
-                    }}
-                    className="cursor-pointer group"
-                    style={{ outline: 'none' }}
-                  >
-                    {/* Outer Ambient Aura */}
-                    <circle
-                      cx={x}
-                      cy={y}
-                      r={isHovered ? 40 : hasTasks ? 32 : 26}
-                      fill={color}
-                      fillOpacity={isHovered ? 0.2 : hasTasks ? 0.08 : 0.03}
-                      stroke={color}
-                      strokeOpacity={isHovered ? 0.8 : hasTasks ? 0.35 : 0.12}
-                      strokeWidth={isHovered ? 2 : 1}
-                      className="transition-all duration-300"
-                    />
-
-                    {/* Core Disk */}
-                    <circle
-                      cx={x}
-                      cy={y}
-                      r={hasTasks ? 20 : 16}
-                      fill="#111318"
-                      stroke={color}
-                      strokeOpacity={isHovered ? 1 : hasTasks ? 0.75 : 0.3}
-                      strokeWidth={hasTasks ? 1.5 : 1}
-                      className="transition-all duration-300 shadow-md"
-                    />
-
-                    {/* Node Core Glyph or Count */}
-                    {node.task ? (
-                      node.task.status === 'DONE' ? (
-                        <path
-                          d={`M ${x - 5} ${y} l 4 4 l 7 -8`}
-                          stroke="#34d399"
-                          fill="none"
-                          strokeWidth="2"
-                        />
-                      ) : (
-                        <circle cx={x} cy={y} r="5" fill={color} />
-                      )
-                    ) : hasTasks ? (
-                      <text
-                        x={x}
-                        y={y + 4.5}
-                        textAnchor="middle"
-                        fill="#ffffff"
-                        fontSize="11"
-                        fontWeight="700"
-                        fontFamily="inherit"
-                      >
-                        {node.count}
-                      </text>
-                    ) : (
-                      <circle cx={x} cy={y} r="3" fill={color} fillOpacity="0.5" />
-                    )}
-
-                    {/* Node Label Pill Background */}
-                    <rect
-                      x={x - Math.min(node.name.length * 3.6 + 12, 85)}
-                      y={y + (hasTasks ? 28 : 22)}
-                      width={Math.min(node.name.length * 7.2 + 24, 170)}
-                      height="20"
-                      rx="10"
-                      fill="#111318"
-                      fillOpacity="0.9"
-                      stroke={isHovered ? color : '#ffffff'}
-                      strokeOpacity={isHovered ? 0.6 : 0.1}
-                      strokeWidth="1"
-                      className="transition-all duration-200"
-                    />
-
-                    {/* Node Label Text */}
-                    <text
-                      x={x}
-                      y={y + (hasTasks ? 42 : 36)}
-                      textAnchor="middle"
-                      fill={isHovered ? '#ffffff' : hasTasks ? '#f4f4f5' : '#a1a1aa'}
-                      fontSize="10.5"
-                      fontWeight={hasTasks ? '600' : '400'}
-                      fontFamily="inherit"
-                    >
-                      {node.name.length > 20 ? node.name.slice(0, 18) + '…' : node.name}
-                    </text>
-
-                    {/* Subtitle Status */}
-                    <text
-                      x={x}
-                      y={y + (hasTasks ? 58 : 52)}
-                      textAnchor="middle"
-                      fill={hasTasks ? color : '#71717a'}
-                      fontSize="9"
-                      fontWeight="500"
-                      fontFamily="inherit"
-                    >
-                      {node.task
-                        ? node.task.status.replaceAll('_', ' ')
-                        : hasTasks
-                        ? `${node.count} task${node.count === 1 ? '' : 's'} · explore`
-                        : '0 tasks'}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Center Core Node (Memory Core / Selected Category) */}
-              <g className="cursor-default select-none">
-                {/* Center Ambient Waves */}
-                <circle
-                  cx={center.x}
-                  cy={center.y}
-                  r="62"
-                  fill="#6366f1"
-                  fillOpacity="0.04"
-                  stroke="#818cf8"
-                  strokeOpacity="0.1"
-                  strokeWidth="1"
-                />
-                <circle
-                  cx={center.x}
-                  cy={center.y}
-                  r="48"
-                  fill="#6366f1"
-                  fillOpacity="0.09"
-                  stroke="#818cf8"
-                  strokeOpacity="0.3"
-                  strokeWidth="1.5"
-                />
-
-                {/* Center Core Solid Disc */}
-                <circle
-                  cx={center.x}
-                  cy={center.y}
-                  r="34"
-                  fill="#111318"
-                  stroke="#818cf8"
-                  strokeOpacity="0.8"
-                  strokeWidth="2"
-                  className="shadow-xl"
-                />
-
-                {/* Center Icon / Glyph */}
-                <text
-                  x={center.x}
-                  y={center.y + 6}
-                  textAnchor="middle"
-                  fill="#c7d2fe"
-                  fontSize="17"
-                  fontWeight="bold"
-                >
-                  {group ? '✦' : 'M'}
-                </text>
-
-                {/* Center Core Badge */}
-                <rect
-                  x={center.x - 70}
-                  y={center.y + 44}
-                  width="140"
-                  height="22"
-                  rx="11"
-                  fill="#111318"
-                  fillOpacity="0.95"
-                  stroke="#818cf8"
-                  strokeOpacity="0.4"
-                  strokeWidth="1"
-                />
-                <text
-                  x={center.x}
-                  y={center.y + 59}
-                  textAnchor="middle"
-                  fill="#fafafa"
-                  fontSize="11"
-                  fontWeight="600"
-                >
-                  {group ? (group.name.length > 18 ? group.name.slice(0, 16) + '…' : group.name) : 'Memory Core'}
-                </text>
-              </g>
-            </svg>
-          </div>
-        )
-      ) : (
-        /* Mode 2: Interactive Cluster Grid Matrix */
-        <div className="p-5 max-h-[520px] overflow-y-auto space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
-            {groups.map((g, i) => {
-              const color = categoryColorPalette[i % categoryColorPalette.length];
-              const taskCount = g.tasks.length;
-              const subCount = g.children.length;
-              const isSelected = group?.id === g.id;
-
-              return (
-                <div
-                  key={g.id}
-                  onClick={() => {
-                    setPath([g.id]);
-                    setPage(0);
-                  }}
-                  className={`p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-indigo-950/20 border-indigo-500/40 shadow-lg'
-                      : 'bg-[#111318] border-white/[.07] hover:border-white/20 hover:bg-white/[.03]'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className="w-3 h-3 rounded-full shrink-0 shadow-sm"
-                          style={{ backgroundColor: color }}
-                        />
-                        <h4 className="text-sm font-semibold text-zinc-100 tracking-tight">{g.name}</h4>
-                      </div>
-                      <span
-                        className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
-                          taskCount > 0
-                            ? 'bg-white/[.08] text-zinc-100 border border-white/10'
-                            : 'bg-transparent text-zinc-600'
-                        }`}
-                      >
-                        {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
-                      </span>
-                    </div>
-
-                    {/* Subcategories preview */}
-                    {subCount > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2 mb-3">
-                        {g.children.slice(0, 4).map((sub) => (
-                          <span
-                            key={sub.id}
-                            className="text-[10px] px-2 py-0.5 rounded-md bg-[#0c0e12] border border-white/[.05] text-zinc-400"
-                          >
-                            {sub.name} ({sub.tasks.length})
-                          </span>
-                        ))}
-                        {subCount > 4 && (
-                          <span className="text-[10px] px-1.5 py-0.5 text-zinc-500 font-medium">
-                            +{subCount - 4} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Top Tasks preview */}
-                    {taskCount > 0 ? (
-                      <div className="space-y-1.5 mt-2">
-                        {g.tasks.slice(0, 2).map((t) => (
-                          <div
-                            key={t.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelectTask(t);
-                            }}
-                            className="flex items-center gap-1.5 text-xs text-zinc-300 hover:text-white truncate p-1 rounded hover:bg-white/[.05] transition"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 shrink-0" />
-                            <span className="truncate">{t.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-zinc-600 mt-2 italic">No active commitments in this area.</p>
-                    )}
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-white/[.05] flex items-center justify-between text-xs">
-                    <span className="text-[11px] text-zinc-500 flex items-center gap-1">
-                      <Folder size={12} /> {subCount} subcategories
-                    </span>
-                    <span className="text-indigo-400 font-medium flex items-center gap-1 hover:underline">
-                      Explore Area <ChevronRight size={12} />
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Graph Footer Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[.07] px-5 py-3 bg-[#111318]/90">
-        <span className="flex items-center gap-2 text-[11px] text-zinc-400">
-          <ArrowUpRight size={13} className="text-zinc-500" />
-          {nodes.length > PAGE_SIZE
-            ? `${currentPage * PAGE_SIZE + 1}–${Math.min(
-                (currentPage + 1) * PAGE_SIZE,
-                nodes.length
-              )} of ${nodes.length} connections`
-            : 'Select any node to explore · Filter commitments below'}
-        </span>
-
-        {viewMode === 'constellation' && (
-          <div className="flex items-center gap-1">
-            {nodes.length > PAGE_SIZE && (
-              <>
-                <button
-                  className="map-control"
-                  aria-label="Previous connections"
-                  disabled={currentPage === 0}
-                  onClick={() => setPage(currentPage - 1)}
-                >
-                  ‹
-                </button>
-                <button
-                  className="map-control mr-2"
-                  aria-label="Next connections"
-                  disabled={(currentPage + 1) * PAGE_SIZE >= nodes.length}
-                  onClick={() => setPage(currentPage + 1)}
-                >
-                  ›
-                </button>
-              </>
-            )}
-            <button
-              className="map-control"
-              aria-label="Zoom out"
-              disabled={zoom <= 0.75}
-              onClick={() => setZoom((z) => Math.max(0.75, z - 0.25))}
-            >
-              <Minus size={14} />
-            </button>
-            <span className="w-10 text-center text-[10px] text-zinc-400 font-medium">
-              {Math.round(zoom * 100)}%
-            </span>
-            <button
-              className="map-control"
-              aria-label="Zoom in"
-              disabled={zoom >= 2}
-              onClick={() => setZoom((z) => Math.min(2, z + 0.25))}
-            >
-              <Plus size={14} />
-            </button>
-            <button
-              className="map-control ml-2"
-              aria-label="Reset map"
-              onClick={() => {
-                setZoom(1);
-                setPath([]);
-                setPage(0);
-              }}
-              title="Reset view"
-            >
-              <Focus size={14} />
-            </button>
-          </div>
-        )}
-      </div>
-    </section>
-  );
+      <div className="neural-focus" aria-live="polite">{focusedTask ? <><span className={isNeuronLit(focusedTask) ? 'neural-legend-light' : 'neural-legend-rest'} /><span className="min-w-0 truncate text-zinc-200">{focusedTask.title}</span><span className="shrink-0 text-[10px] uppercase tracking-wider text-zinc-500">{focusedTask.status}</span><button onClick={() => open(focusedTask)} className="ml-auto shrink-0 text-xs text-[#d9c49b]">View task →</button></> : <><Sparkles size={13} className="text-[#a28e69]" /><span>Select a neuron to read its memory.</span></>}</div>
+    </div> : <div className="max-h-[550px] overflow-y-auto px-5 py-4"><p className="mb-4 text-xs text-zinc-500">{group?.name || 'All memories'} · {tasks.length} tasks</p>{!tasks.length && <p className="py-6 text-sm text-zinc-500">Capture a task to form your first connection.</p>}{pageTasks.map(task => <button key={task.id} className="neural-list-task" onClick={() => open(task)}><span className={isNeuronLit(task) ? 'neural-legend-light' : 'neural-legend-rest'} /><span className="min-w-0 flex-1 text-left"><span className="block break-words text-sm text-zinc-200">{task.title}</span><span className="mt-1 block text-[10px] text-zinc-500">{task.project?.name || task.subcategory?.name || task.category?.name || 'Personal'} · {task.status.toLowerCase()}</span></span>{task.status === 'DONE' && <Check size={13} className="shrink-0 text-zinc-600" />}</button>)}</div>}
+    <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[.06] px-5 py-3">
+      <p className="text-[10px] text-zinc-500">{tasks.length > NEURON_PAGE_SIZE ? `${currentPage * NEURON_PAGE_SIZE + 1}–${Math.min((currentPage + 1) * NEURON_PAGE_SIZE, tasks.length)} of ${tasks.length} memories` : `${tasks.length} memories connected`}<span className="mx-2 text-zinc-700">/</span>Done memories stay, their light rests.</p>
+      <div className="flex items-center gap-1">{tasks.length > NEURON_PAGE_SIZE && <><button className="map-control" aria-label="Previous neurons" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>‹</button><button className="map-control" aria-label="Next neurons" disabled={(currentPage + 1) * NEURON_PAGE_SIZE >= tasks.length} onClick={() => setPage(currentPage + 1)}>›</button></>}{view === 'brain' && <><button className="map-control" aria-label="Zoom out" disabled={zoom <= 1} onClick={() => setZoom(value => Math.max(1, value - .25))}><Minus size={14} /></button><span className="w-10 text-center text-[10px] text-zinc-400">{Math.round(zoom * 100)}%</span><button className="map-control" aria-label="Zoom in" disabled={zoom >= 2.5} onClick={() => setZoom(value => Math.min(2.5, value + .25))}><Plus size={14} /></button><button className="map-control" aria-label="Reset brain view" onClick={() => { setZoom(1); navigate([]); }}><Focus size={14} /></button></>}</div>
+    </footer>
+  </section>;
 }

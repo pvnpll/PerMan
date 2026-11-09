@@ -21,8 +21,26 @@ rl.on('line', async (line) => {
   const trimmed = line.trim();
   if (!trimmed) return;
 
+  let payload;
   try {
-    const payload = JSON.parse(trimmed);
+    payload = JSON.parse(trimmed);
+  } catch (parseErr) {
+    process.stdout.write(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: null,
+        error: {
+          code: -32700,
+          message: 'Parse error: invalid JSON',
+        },
+      }) + '\n'
+    );
+    return;
+  }
+
+  const isNotification = payload.id === undefined || payload.id === null;
+
+  try {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -32,12 +50,38 @@ rl.on('line', async (line) => {
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
+    if (isNotification) {
+      // Notifications do not expect a response
+      return;
+    }
+
+    const text = await response.text();
+    if (!text.trim()) {
+      process.stdout.write(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: payload.id,
+          error: {
+            code: -32603,
+            message: `Empty response from server (HTTP ${response.status})`,
+          },
+        }) + '\n'
+      );
+      return;
+    }
+
+    const data = JSON.parse(text);
+    if (data.id === undefined) {
+      data.id = payload.id;
+    }
     process.stdout.write(JSON.stringify(data) + '\n');
   } catch (err) {
+    if (isNotification) {
+      return;
+    }
     const errObj = {
       jsonrpc: '2.0',
-      id: null,
+      id: payload?.id ?? null,
       error: {
         code: -32603,
         message: err.message || 'Internal MCP Bridge Error',

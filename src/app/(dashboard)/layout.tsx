@@ -83,6 +83,7 @@ export default function DashboardLayout({
 
           {/* Right Header Actions */}
           <div className="flex items-center space-x-2 md:space-x-3">
+            <Link href="/workspace" className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Workspace</Link>
             {/* Subtle compact clock on tablet/large mobile */}
             <div className="hidden sm:flex md:hidden items-center space-x-1.5 text-[11px] text-zinc-500 mr-1">
               <Clock className="w-3 h-3 text-zinc-500" />

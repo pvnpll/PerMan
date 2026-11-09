@@ -23,6 +23,12 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface TaskCounts {
+  active: number;
+  completed: number;
+  total: number;
+}
+
 export interface Category {
   id: string;
   user_id: string;
@@ -36,6 +42,7 @@ export interface Category {
   created_at: string;
   updated_at: string;
   subcategories?: Category[];
+  counts?: TaskCounts;
 }
 
 export interface Project {

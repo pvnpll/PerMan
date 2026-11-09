@@ -26,9 +26,19 @@ export async function resolveTaskOrganizationUpdate(userId: string, task: Task, 
     return category;
   };
   const ensure = async (name: string, parentId: string | null) => {
-    const found = all.find(c => !c.is_archived && c.parent_id === parentId && c.name.trim().toLowerCase() === name.trim().toLowerCase());
+    let found = all.find(c => !c.is_archived && c.parent_id === parentId && c.name.trim().toLowerCase() === name.trim().toLowerCase());
+    if (!found && !parentId) {
+      if (/^(development\s*&\s*projects?|projects?)$/i.test(name.trim())) {
+        found = roots.find(c => !c.is_archived && /development\s*&\s*projects?/i.test(c.name));
+      } else if (/^(personal|personal\s*&\s*life\s*admin)$/i.test(name.trim())) {
+        found = roots.find(c => !c.is_archived && /personal(\s*&\s*life\s*admin)?/i.test(c.name));
+      }
+    }
     if (found) return found;
-    const created = await categories.createCategory(userId, { name: name.trim(), parent_id: parentId, sort_order: 0 });
+    const resolvedName = (!parentId && /^(projects?|development\s*&\s*projects?)$/i.test(name.trim()))
+      ? 'Development & Projects'
+      : name.trim();
+    const created = await categories.createCategory(userId, { name: resolvedName, parent_id: parentId, sort_order: 0 });
     all.push(created);
     return created;
   };
@@ -60,7 +70,7 @@ export async function resolveTaskOrganizationUpdate(userId: string, task: Task, 
     if (input.project_name === null) projectId = null;
     else {
       const existing = (await projects.getProjects(userId)).find(p => p.name.trim().toLowerCase() === input.project_name!.trim().toLowerCase());
-      if (!categoryId) categoryId = (await ensure('Projects', null)).id;
+      if (!categoryId) categoryId = (await ensure('Development & Projects', null)).id;
       if (input.subcategory_name === undefined && input.subcategory_id === undefined) subcategoryId = (await ensure(input.project_name, categoryId)).id;
       projectId = existing?.id || (await projects.createProject(userId, { name: input.project_name, category_id: subcategoryId || categoryId, status: 'ACTIVE' })).id;
     }

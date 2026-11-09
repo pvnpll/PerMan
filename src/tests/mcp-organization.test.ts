@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveTaskOrganizationUpdate } from '../lib/services/mcp-organization.service';
 import * as categories from '../lib/services/categories.service';
 import * as projects from '../lib/services/projects.service';
-import type { Task, Category } from '../lib/types';
+import type { Task, Category, Project } from '../lib/types';
 vi.mock('../lib/services/categories.service', () => ({ getCategories: vi.fn(), createCategory: vi.fn() }));
 vi.mock('../lib/services/projects.service', () => ({ getProjects: vi.fn(), getProjectById: vi.fn(), createProject: vi.fn() }));
 const task = { category_id: 'personal', subcategory_id: 'health', project_id: null, status: 'NEXT', priority: 'MEDIUM' } as Task;
@@ -11,7 +11,7 @@ beforeEach(() => {
   vi.mocked(categories.getCategories).mockResolvedValue([
     { id: 'personal', parent_id: null, name: 'Personal', subcategories: [{ id: 'health', parent_id: 'personal', name: 'Health' }] },
     { id: 'shopping', parent_id: null, name: 'Shopping & Purchases', subcategories: [{ id: 'fitness', parent_id: 'shopping', name: 'Fitness & Nutrition' }] },
-  ] as Category[]);
+  ] as unknown as Category[]);
 });
 describe('MCP task organization', () => {
   it('assigns the requested hierarchy without altering task details', async () => {
@@ -41,5 +41,26 @@ describe('MCP task organization', () => {
     vi.mocked(categories.createCategory).mockResolvedValue({ id: 'new' } as Category);
     expect(await resolveTaskOrganizationUpdate('user', task, { subcategory_name: 'Exercise' })).toMatchObject({ category_id: 'personal', subcategory_id: 'new' });
     expect(categories.createCategory).toHaveBeenCalledWith('user', { name: 'Exercise', parent_id: 'personal', sort_order: 0 });
+  });
+  it('assigns project under existing Development & Projects category', async () => {
+    vi.mocked(categories.getCategories).mockResolvedValue([
+      { id: 'dev-proj', parent_id: null, name: 'Development & Projects', subcategories: [] },
+    ] as unknown as Category[]);
+    vi.mocked(projects.getProjects).mockResolvedValue([]);
+    vi.mocked(categories.createCategory).mockResolvedValue({ id: 'sub-new', name: 'MyProject', parent_id: 'dev-proj' } as unknown as Category);
+    vi.mocked(projects.createProject).mockResolvedValue({ id: 'proj-new', name: 'MyProject' } as unknown as Project);
+
+    const unassignedTask = { ...task, category_id: null, subcategory_id: null };
+    const result = await resolveTaskOrganizationUpdate('user', unassignedTask, { project_name: 'MyProject' });
+    expect(result).toEqual({
+      category_id: 'dev-proj',
+      subcategory_id: 'sub-new',
+      project_id: 'proj-new',
+    });
+    expect(categories.createCategory).toHaveBeenCalledWith('user', {
+      name: 'MyProject',
+      parent_id: 'dev-proj',
+      sort_order: 0,
+    });
   });
 });

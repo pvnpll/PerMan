@@ -177,6 +177,14 @@ export async function updateTask(
 ): Promise<Task> {
   const admin = createAdminClient();
 
+  if (input.status === 'DONE') {
+    const details = { ...input };
+    delete details.status;
+    delete details.completed_at;
+    if (Object.keys(details).length) await updateTask(userId, taskId, details);
+    return completeTask(userId, taskId);
+  }
+
   const payload: any = {};
   if (input.title !== undefined) payload.title = input.title;
   if (input.description !== undefined) payload.description = input.description;
@@ -185,11 +193,7 @@ export async function updateTask(
   if (input.project_id !== undefined) payload.project_id = input.project_id;
   if (input.status !== undefined) {
     payload.status = input.status;
-    if (input.status === 'DONE' && !input.completed_at) {
-      payload.completed_at = new Date().toISOString();
-    } else if (input.status !== 'DONE' && input.completed_at === undefined) {
-      payload.completed_at = null;
-    }
+    if (input.completed_at === undefined) payload.completed_at = null;
   }
   if (input.priority !== undefined) payload.priority = input.priority;
   if (input.due_date !== undefined) payload.due_date = input.due_date;
@@ -256,21 +260,11 @@ export async function updateTask(
 
 export async function completeTask(userId: string, taskId: string): Promise<Task> {
   const current = await getTaskById(userId, taskId);
-  if (!current) {
-    throw new Error('Task not found');
-  }
-
-  const completed = await updateTask(userId, taskId, {
-    status: 'DONE',
-    completed_at: new Date().toISOString(),
-  });
-
-  // Handle recurring task: schedule next instance if recurrence rule is configured
-  if (current.recurrence_rule && current.due_date) {
-    await createNextRecurringInstance(userId, current);
-  }
-
-  return completed;
+  if (!current) throw new Error('Task not found');
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc('pm_complete_task', { p_user_id: userId, p_task_id: taskId });
+  if (error) throw new Error(`Could not complete task: ${error.message}`);
+  return { ...current, ...data } as Task;
 }
 
 export async function archiveTask(userId: string, taskId: string): Promise<Task> {
@@ -378,14 +372,42 @@ export async function getDailySummary(
   };
 }
 
-async function createNextRecurringInstance(userId: string, parentTask: Task) {
-  const rule = parentTask.recurrence_rule;
-  if (!rule || !parentTask.due_date) return;
+export function calculateNextOccurrence(
+  currentTask: {
+    due_date: string | null;
+    reminder_time?: string | null;
+    timezone?: string;
+    recurrence_rule?: {
+      frequency: string;
+      interval?: number;
+      count?: number | null;
+      end_date?: string | null;
+      current_occurrence?: number | null;
+    } | null;
+  }
+): {
+  shouldCreate: boolean;
+  nextDueDate: string | null;
+  nextReminderDate: string | null;
+  nextRule: any;
+} | null {
+  const rule = currentTask.recurrence_rule;
+  if (!rule || !currentTask.due_date) return null;
 
-  const currentDue = parseISO(parentTask.due_date);
-  const interval = rule.interval || 1;
+  const validFrequencies = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'];
+  if (!validFrequencies.includes(rule.frequency)) return null;
+
+  // 1. Check count limit
+  const currentCount = rule.current_occurrence ?? 1;
+  if (rule.count !== undefined && rule.count !== null && currentCount >= rule.count) {
+    return { shouldCreate: false, nextDueDate: null, nextReminderDate: null, nextRule: null };
+  }
+
+  // 2. Interval calculation
+  const interval = Math.max(1, Math.min(1000, rule.interval || 1));
+  const currentDue = parseISO(currentTask.due_date);
+
   let nextDue: Date;
-
   switch (rule.frequency) {
     case 'DAILY':
       nextDue = addDays(currentDue, interval);
@@ -400,12 +422,21 @@ async function createNextRecurringInstance(userId: string, parentTask: Task) {
       nextDue = addYears(currentDue, interval);
       break;
     default:
-      nextDue = addDays(currentDue, interval);
+      return null;
   }
 
+  // 3. Check end_date limit
+  if (rule.end_date) {
+    const endCutoff = parseISO(rule.end_date);
+    if (nextDue > endCutoff) {
+      return { shouldCreate: false, nextDueDate: null, nextReminderDate: null, nextRule: null };
+    }
+  }
+
+  // 4. Reminder calculation
   let nextReminder: string | null = null;
-  if (parentTask.reminder_time) {
-    const currentRemind = parseISO(parentTask.reminder_time);
+  if (currentTask.reminder_time) {
+    const currentRemind = parseISO(currentTask.reminder_time);
     let nextRemindDate: Date;
     switch (rule.frequency) {
       case 'DAILY':
@@ -426,20 +457,13 @@ async function createNextRecurringInstance(userId: string, parentTask: Task) {
     nextReminder = nextRemindDate.toISOString();
   }
 
-  await createTask(userId, {
-    title: parentTask.title,
-    description: parentTask.description,
-    category_id: parentTask.category_id,
-    subcategory_id: parentTask.subcategory_id,
-    project_id: parentTask.project_id,
-    status: 'SCHEDULED',
-    priority: parentTask.priority,
-    due_date: nextDue.toISOString(),
-    reminder_time: nextReminder,
-    timezone: parentTask.timezone,
-    recurrence_rule: rule,
-    source: parentTask.source,
-    merchant: parentTask.merchant,
-    estimated_amount: parentTask.estimated_amount ?? undefined,
-  });
+  return {
+    shouldCreate: true,
+    nextDueDate: nextDue.toISOString(),
+    nextReminderDate: nextReminder,
+    nextRule: {
+      ...rule,
+      current_occurrence: currentCount + 1,
+    },
+  };
 }

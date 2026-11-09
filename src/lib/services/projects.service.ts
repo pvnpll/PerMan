@@ -65,6 +65,23 @@ export async function createProject(
 ): Promise<Project> {
   const admin = createAdminClient();
 
+  let categoryId = input.category_id || null;
+
+  if (!categoryId) {
+    const { data: devCat } = await admin
+      .from(PM_TABLES.CATEGORIES)
+      .select('id')
+      .eq('user_id', userId)
+      .is('parent_id', null)
+      .ilike('name', '%development%project%')
+      .limit(1)
+      .maybeSingle();
+
+    if (devCat?.id) {
+      categoryId = devCat.id;
+    }
+  }
+
   const { data, error } = await admin
     .from(PM_TABLES.PROJECTS)
     .insert({
@@ -74,7 +91,7 @@ export async function createProject(
       color: input.color || '#3B82F6',
       icon: input.icon || 'Folder',
       status: input.status || 'ACTIVE',
-      category_id: input.category_id || null,
+      category_id: categoryId,
       target_date: input.target_date || null,
     })
     .select('*')

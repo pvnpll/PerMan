@@ -27,6 +27,7 @@ export function Sidebar({ onOpenQuickAdd, userEmail }: SidebarProps) {
 
   const navItems = [
     { label: 'Memory overview', href: '/', icon: LayoutDashboard },
+    { label: 'Notes & Routines', href: '/workspace', icon: FolderKanban },
     { label: 'Inbox', href: '/inbox', icon: Inbox },
     { label: 'All Tasks', href: '/tasks', icon: CheckSquare },
     { label: 'Categories', href: '/categories', icon: Tags },

@@ -8,7 +8,7 @@ export function buildMemoryGroups(categories: Category[], tasks: Task[]): Memory
     id: c.id, name: c.name, tasks: [],
     children: (c.subcategories || []).filter(s => !s.is_archived).map(s => ({ id: s.id, name: s.name, tasks: [], children: [] })),
   }));
-  for (const task of tasks) {
+  for (const task of new Map(tasks.filter(task => !task.archived_at).map(task => [task.id, task])).values()) {
     let root = roots.find(r => r.id === task.category_id || r.children.some(c => c.id === task.category_id || c.id === task.subcategory_id));
     if (!root) {
       const id = task.project_id ? 'project-tasks' : 'uncategorized';

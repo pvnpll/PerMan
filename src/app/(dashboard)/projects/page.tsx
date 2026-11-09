@@ -34,7 +34,12 @@ export default function ProjectsPage() {
         fetch('/api/categories').then((r) => r.json()),
       ]);
       setProjects(projRes.projects || []);
-      setCategories(catRes.categories || []);
+      const cats: Category[] = catRes.categories || [];
+      setCategories(cats);
+      const devCat = cats.find((c) => /development\s*&\s*projects?/i.test(c.name));
+      if (devCat) {
+        setCategoryId(devCat.id);
+      }
     } catch {
       // ignore
     } finally {
@@ -52,6 +57,9 @@ export default function ProjectsPage() {
 
     setSubmitting(true);
     try {
+      const devCat = categories.find((c) => /development\s*&\s*projects?/i.test(c.name));
+      const targetCategoryId = categoryId || devCat?.id || null;
+
       await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,14 +67,14 @@ export default function ProjectsPage() {
           name: projectName,
           description: description || null,
           color,
-          category_id: categoryId || null,
+          category_id: targetCategoryId,
           status: 'ACTIVE',
         }),
       });
 
       setProjectName('');
       setDescription('');
-      setCategoryId('');
+      if (devCat) setCategoryId(devCat.id);
       setCreateModalOpen(false);
       fetchProjectsAndCategories();
     } catch {
@@ -135,7 +143,11 @@ export default function ProjectsPage() {
         </div>
 
         <button
-          onClick={() => setCreateModalOpen(true)}
+          onClick={() => {
+            const devCat = categories.find((c) => /development\s*&\s*projects?/i.test(c.name));
+            if (devCat) setCategoryId(devCat.id);
+            setCreateModalOpen(true);
+          }}
           className="memory-btn-primary py-2 px-3.5 text-xs flex items-center space-x-1.5 shrink-0"
         >
           <Plus className="w-4 h-4" />

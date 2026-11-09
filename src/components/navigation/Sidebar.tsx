@@ -109,6 +109,10 @@ export function Sidebar({ onOpenQuickAdd, userEmail }: SidebarProps) {
           <LogOut className="w-4 h-4" />
         </button>
       </div>
+
+      <div className="px-4 py-2 text-[10px] text-zinc-500 border-t border-white/[.04] flex items-center justify-between">
+        <span>Developed by <a href="https://pvnpll.in" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-zinc-200 underline underline-offset-2 transition-colors">pvnpll</a></span>
+      </div>
     </aside>
   );
 }

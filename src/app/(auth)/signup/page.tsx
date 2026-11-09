@@ -151,6 +151,9 @@ export default function SignUpPage() {
           </p>
         </div>
       </div>
+      <div className="mt-6 text-center text-xs text-zinc-500">
+        Developed by <a href="https://pvnpll.in" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-zinc-200 underline underline-offset-2 transition-colors">pvnpll</a>
+      </div>
     </div>
   );
 }

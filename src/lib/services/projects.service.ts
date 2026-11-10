@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { PM_TABLES } from '@/lib/db-tables';
 import { Project } from '@/lib/types';
 import { CreateProjectInput, UpdateProjectInput } from '@/lib/validation';
+import { getCanonicalDevelopmentCategory, isProjectsCategoryAlias } from './categories.service';
 
 export async function getProjects(userId: string): Promise<Project[]> {
   const admin = createAdminClient();
@@ -59,28 +60,73 @@ export async function getProjectById(userId: string, projectId: string): Promise
   return data as Project;
 }
 
+export async function resolveProjectCategory(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  requestedCategoryId?: string | null
+): Promise<string> {
+  let canonicalDev = await getCanonicalDevelopmentCategory(userId, admin);
+
+  if (!canonicalDev) {
+    const { data: newCat, error } = await admin
+      .from(PM_TABLES.CATEGORIES)
+      .insert({
+        user_id: userId,
+        name: 'Development & Projects',
+        slug: 'development-projects',
+        parent_id: null,
+        icon: 'Code',
+        color: '#3B82F6',
+        sort_order: 10,
+        is_archived: false,
+      })
+      .select('*')
+      .single();
+
+    if (!error && newCat) {
+      canonicalDev = newCat as any;
+    }
+  }
+
+  const canonicalId = canonicalDev?.id;
+  if (!canonicalId) {
+    throw new Error('Failed to resolve canonical Development & Projects category');
+  }
+
+  if (!requestedCategoryId || requestedCategoryId === canonicalId) {
+    return canonicalId;
+  }
+
+  // Check if requested category is a valid subcategory of Development & Projects
+  const { data: targetCat } = await admin
+    .from(PM_TABLES.CATEGORIES)
+    .select('id, parent_id, name')
+    .eq('id', requestedCategoryId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (targetCat) {
+    // If it's a subcategory under Development & Projects, preserve it
+    if (targetCat.parent_id === canonicalId) {
+      return targetCat.id;
+    }
+    // If it's a root category alias of Development & Projects
+    if (!targetCat.parent_id && isProjectsCategoryAlias(targetCat.name)) {
+      return canonicalId;
+    }
+  }
+
+  // Any other category requested for a Project must default to Development & Projects
+  return canonicalId;
+}
+
 export async function createProject(
   userId: string,
   input: CreateProjectInput
 ): Promise<Project> {
   const admin = createAdminClient();
 
-  let categoryId = input.category_id || null;
-
-  if (!categoryId) {
-    const { data: devCat } = await admin
-      .from(PM_TABLES.CATEGORIES)
-      .select('id')
-      .eq('user_id', userId)
-      .is('parent_id', null)
-      .ilike('name', '%development%project%')
-      .limit(1)
-      .maybeSingle();
-
-    if (devCat?.id) {
-      categoryId = devCat.id;
-    }
-  }
+  const categoryId = await resolveProjectCategory(admin, userId, input.category_id);
 
   const { data, error } = await admin
     .from(PM_TABLES.PROJECTS)
@@ -112,6 +158,11 @@ export async function updateProject(
 ): Promise<Project> {
   const admin = createAdminClient();
 
+  let categoryId: string | undefined = undefined;
+  if (input.category_id !== undefined) {
+    categoryId = await resolveProjectCategory(admin, userId, input.category_id);
+  }
+
   const { data, error } = await admin
     .from(PM_TABLES.PROJECTS)
     .update({
@@ -120,7 +171,7 @@ export async function updateProject(
       ...(input.color !== undefined && { color: input.color }),
       ...(input.icon !== undefined && { icon: input.icon }),
       ...(input.status !== undefined && { status: input.status }),
-      ...(input.category_id !== undefined && { category_id: input.category_id }),
+      ...(categoryId !== undefined && { category_id: categoryId }),
       ...(input.target_date !== undefined && { target_date: input.target_date }),
     })
     .eq('id', projectId)

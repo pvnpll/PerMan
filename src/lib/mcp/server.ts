@@ -42,7 +42,7 @@ export function createPerManMcpServer(authInfo: McpAuthInfo) {
     {
       title: z.string().describe('The task title or quick-add text (e.g. "Buy headphones from Amazon next month")'),
       description: z.string().optional().describe('Optional detailed notes or description'),
-      category_name: z.string().trim().min(1).max(100).optional().describe('AI-chosen life area. Defaults to Projects for project work, otherwise Personal.'),
+      category_name: z.string().trim().min(1).max(100).optional().describe('AI-chosen life area. Defaults to Development & Projects for project work, otherwise Personal & Life Admin.'),
       subcategory_name: z.string().trim().min(1).max(100).optional().describe('AI-chosen subgroup, e.g. Health, Finances, Shopping. Created automatically. For project tasks the project name is the subgroup.'),
       project_name: z.string().trim().min(1).max(100).optional().describe('Optional project name (e.g. "Calflow", "Rimev", "Klay")'),
       status: z.enum(['INBOX', 'NEXT', 'SCHEDULED', 'WAITING', 'DONE', 'CANCELLED']).optional(),
@@ -267,13 +267,34 @@ export function createPerManMcpServer(authInfo: McpAuthInfo) {
     async (args) => {
       let parentId: string | null = null;
       if (args.parent_category_name) {
-        const parent = (await categoriesService.getCategories(userId)).find(category =>
-          !category.is_archived && category.name.trim().toLowerCase() === args.parent_category_name!.trim().toLowerCase()
+        const parentName = args.parent_category_name.trim();
+        const categories = await categoriesService.getCategories(userId);
+        let parent = categories.find(category =>
+          !category.is_archived && category.name.trim().toLowerCase() === parentName.toLowerCase()
         );
+
+        if (!parent && categoriesService.isProjectsCategoryAlias(parentName)) {
+          parent = categories.find(category =>
+            !category.is_archived && categoriesService.isProjectsCategoryAlias(category.name)
+          );
+        }
+
         const resolved = parent || await categoriesService.createCategory(userId, {
-          name: args.parent_category_name, sort_order: 0,
+          name: categoriesService.isProjectsCategoryAlias(parentName) ? 'Development & Projects' : parentName,
+          sort_order: 0,
         });
         parentId = resolved.id;
+      }
+
+      if (!parentId && categoriesService.isProjectsCategoryAlias(args.name.trim())) {
+        const canonical = await categoriesService.getCanonicalDevelopmentCategory(userId);
+        if (canonical) {
+          return jsonResponse({
+            success: true,
+            message: `Category "${canonical.name}" already exists and was reused`,
+            category: canonical,
+          });
+        }
       }
 
       const created = await categoriesService.createCategory(userId, {
@@ -347,7 +368,17 @@ export function createPerManMcpServer(authInfo: McpAuthInfo) {
   const validateProjectCategory = async (id?: string | null) => {
     if (!id) return;
     const roots = await categoriesService.getCategories(userId);
-    if (!roots.flatMap(c => [c, ...(c.subcategories || [])]).some(c => c.id === id)) throw new Error('Category not found or access denied');
+    const all = roots.flatMap(c => [c, ...(c.subcategories || [])]);
+    const target = all.find(c => c.id === id);
+    if (!target) throw new Error('Category not found or access denied');
+
+    const devCat = roots.find(c => !c.is_archived && categoriesService.isProjectsCategoryAlias(c.name));
+    if (devCat) {
+      const allowed = new Set<string>([devCat.id, ...(devCat.subcategories || []).map(s => s.id)]);
+      if (!allowed.has(id)) {
+        throw new Error("Project category must be 'Development & Projects' or one of its subcategories");
+      }
+    }
   };
   server.tool('create_project', 'Create a project with description, category, status, styling and target date.', CreateProjectSchema.shape,
     async (args) => {

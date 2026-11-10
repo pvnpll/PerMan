@@ -3,6 +3,24 @@ import { PM_TABLES } from '@/lib/db-tables';
 import { Category, TaskCounts } from '@/lib/types';
 import { CreateCategoryInput } from '@/lib/validation';
 
+export function isProjectsCategoryAlias(name: string): boolean {
+  return /^(projects?|development\s*(&|and)\s*projects?|dev\s*(&|and)\s*projects?)$/i.test(name.trim());
+}
+
+export async function getCanonicalDevelopmentCategory(userId: string, adminClient?: any): Promise<Category | null> {
+  const admin = adminClient || createAdminClient();
+  const { data } = await admin
+    .from(PM_TABLES.CATEGORIES)
+    .select('*')
+    .eq('user_id', userId)
+    .is('parent_id', null)
+    .ilike('name', '%development%project%')
+    .limit(1)
+    .maybeSingle();
+
+  return (data as Category) || null;
+}
+
 export function computeCategoryTaskCounts(
   categories: Category[],
   tasks: Array<{ id: string; category_id: string | null; subcategory_id: string | null; status: string }>
@@ -105,7 +123,22 @@ export async function createCategory(
   input: CreateCategoryInput
 ): Promise<Category> {
   const admin = createAdminClient();
-  const slug = input.name
+  const trimmedName = input.name.trim();
+
+  // If attempting to create a root category with "Projects" or any alias of "Development & Projects",
+  // enforce re-use of canonical "Development & Projects" to avoid duplicate root categories.
+  if (!input.parent_id && isProjectsCategoryAlias(trimmedName)) {
+    const existingDev = await getCanonicalDevelopmentCategory(userId);
+    if (existingDev) {
+      return existingDev;
+    }
+  }
+
+  const finalName = (!input.parent_id && isProjectsCategoryAlias(trimmedName))
+    ? 'Development & Projects'
+    : trimmedName;
+
+  const slug = finalName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
@@ -114,7 +147,7 @@ export async function createCategory(
     .from(PM_TABLES.CATEGORIES)
     .insert({
       user_id: userId,
-      name: input.name,
+      name: finalName,
       slug,
       parent_id: input.parent_id || null,
       icon: input.icon || null,
@@ -267,11 +300,18 @@ export async function deleteCategory(userId: string, categoryId: string): Promis
 
 export async function findCategoryByName(userId: string, name: string): Promise<Category | null> {
   const admin = createAdminClient();
+  const trimmed = name.trim();
+
+  if (isProjectsCategoryAlias(trimmed)) {
+    const canonical = await getCanonicalDevelopmentCategory(userId);
+    if (canonical) return canonical;
+  }
+
   const { data } = await admin
     .from(PM_TABLES.CATEGORIES)
     .select('*')
     .eq('user_id', userId)
-    .ilike('name', `%${name}%`)
+    .ilike('name', `%${trimmed}%`)
     .limit(1)
     .maybeSingle();
 

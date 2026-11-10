@@ -170,7 +170,8 @@ export default function ProjectsPage() {
             const total = proj.task_count || 0;
             const completed = proj.completed_count || 0;
             const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
-            const assignedCat = categories.find((c) => c.id === proj.category_id);
+            const allCategories = categories.flatMap((c) => [c, ...(c.subcategories || [])]);
+            const assignedCat = allCategories.find((c) => c.id === proj.category_id);
 
             return (
               <div
@@ -284,11 +285,15 @@ export default function ProjectsPage() {
                   onChange={(e) => setCategoryId(e.target.value)}
                   className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
                 >
-                  <option value="">No Category</option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
+                    <optgroup key={c.id} label={c.name}>
+                      <option value={c.id}>{c.name}</option>
+                      {c.subcategories?.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          — {sub.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -385,11 +390,15 @@ export default function ProjectsPage() {
                   onChange={(e) => setEditCategory(e.target.value)}
                   className="w-full bg-[#0c0e12] border border-white/[.07] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-white/25"
                 >
-                  <option value="">No Category</option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
+                    <optgroup key={c.id} label={c.name}>
+                      <option value={c.id}>{c.name}</option>
+                      {c.subcategories?.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          — {sub.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>

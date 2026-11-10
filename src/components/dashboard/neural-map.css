@@ -18,6 +18,8 @@
 .neural-caption > span { color: #a8b8ae; font-size: 9px; letter-spacing: .28em; }
 .neural-caption > p { margin-top: 7px; color: #58675f; font-size: 11px; }
 .neural-canvas { display: block; height: auto; max-width: none; }
+.synaptic-viewport { cursor: grab; touch-action: none; overscroll-behavior: contain; user-select: none; }
+.synaptic-viewport:active { cursor: grabbing; }
 .neural-anatomy path:not([fill]) { fill: none; stroke: #64877b; stroke-width: 1; stroke-opacity: .14; }
 .neural-annotation { fill: #5a7169; font-size: 8px; letter-spacing: 2px; font-family: var(--font-geist-mono), monospace; }
 .neuron-control { cursor: pointer; outline: none; }
@@ -42,3 +44,15 @@
   .neural-aura, .neural-impulse { animation: none; }
   .neural-impulse { display: none; }
 }
+
+.synaptic-settings { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 14px 20px 0; color: #82908a; font-size: 10px; }
+.synaptic-settings label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.synaptic-settings input { accent-color: #77c6bb; }
+.synaptic-settings > span { margin-left: auto; color: #65746c; }
+.synaptic-label { font-size: 11px; pointer-events: none; paint-order: stroke; stroke: #0c1113; stroke-width: 4px; stroke-linejoin: round; }
+.synaptic-label-core { font-size: 17px; font-weight: 500; }
+.synaptic-label-category { font-size: 13px; }
+.synaptic-label-task { font-size: 9px; }
+.synaptic-viewport .neural-canvas { margin-inline: auto; transition: width .16s ease-out; }
+.neural-motion-off .neural-aura { animation: none; }
+.neural-motion-off .neural-impulse { display: none; }

@@ -53,6 +53,7 @@
 .synaptic-label-core { font-size: 17px; font-weight: 500; }
 .synaptic-label-category { font-size: 13px; }
 .synaptic-label-task { font-size: 9px; }
+.synaptic-connection { transition: stroke-opacity .2s ease; }
 .synaptic-viewport .neural-canvas { margin-inline: auto; transition: width .16s ease-out; }
 .neural-motion-off .neural-aura { animation: none; }
 .neural-motion-off .neural-impulse { display: none; }

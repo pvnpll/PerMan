@@ -116,6 +116,16 @@ export function MemoryMap({ groups, onSelectTask, onSelectGroup }: { groups: Mem
             <filter id={`${prefix}-glow`} x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="3.5" /></filter>
           </defs>
           <ellipse cx="600" cy="370" rx="520" ry="345" fill={`url(#${prefix}-ambient)`} />
+          <g aria-hidden="true">{scene.edges.map(edge => {
+            const from = rotatePoint(edge.from.x, edge.from.y);
+            const to = rotatePoint(edge.to.x, edge.to.y);
+            const bend = (edge.to.seed % 2 ? 1 : -1) * 18;
+            const path = `M${from.x},${from.y} Q${(from.x + to.x) / 2 + bend},${(from.y + to.y) / 2 - bend} ${to.x},${to.y}`;
+            return <g key={edge.to.id} data-edge-from={edge.from.id} data-edge-to={edge.to.id} data-lit={edge.lit}>
+              <path className="synaptic-connection" d={path} fill="none" stroke={edge.lit ? edge.to.color : '#344548'} strokeWidth={edge.to.kind === 'category' ? 1.6 : .75} strokeOpacity={edge.lit ? .38 : .24} />
+              {edge.lit && motion && <path className="neural-impulse" d={path} fill="none" stroke={edge.to.color} strokeWidth="1" strokeDasharray="2 52" />}
+            </g>;
+          })}</g>
           {scene.nodes.map(node => {
             const point = rotatePoint(node.x, node.y);
             const radius = node.kind === 'core' ? 18 : node.kind === 'category' ? 12 : node.kind === 'group' ? 7.5 : 3.7;
